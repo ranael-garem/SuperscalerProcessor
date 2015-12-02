@@ -145,7 +145,20 @@ public class Parser {
 	}
 
 	public void parseProgramData(ArrayList<String> input) {
-
+		pointer++;
+		String[] temp = new String[2];
+		if(input.get(pointer).equals("ProgramData")){
+			System.out.println("Final Part------------");
+			pointer++;
+			while(!input.get(pointer).equals("endofData")) {
+				temp = input.get(pointer).split(";");
+				System.out.println(temp[0]+"---------"+temp[1]);
+				m.memory.WriteToMemory(Integer.parseInt(temp[0]), Integer.parseInt(temp[1]));
+				pointer++;
+			}
+			System.out.println("----------------");
+			System.out.println("Done");
+		}
 	}
 
 	public static void main(String[] args) {
