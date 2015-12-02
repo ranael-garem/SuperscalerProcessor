@@ -19,10 +19,12 @@ MULCycles:7
 LWRS:1
 LWCycles:10
 AssemblyProgram
-.org 
+.org 100
 ---
 ---
 ---
+endofAssembly
 ProgramData
 "memAdd;Value"
+endofData
 

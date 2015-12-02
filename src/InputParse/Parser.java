@@ -2,11 +2,13 @@ package InputParse;
 
 import java.util.ArrayList;
 
+import tomasulo.Tomasulo;
 import memoryHierarchy.MemoryHierarchy;
 
 public class Parser {
 	private int pointer = 0;
 	MemoryHierarchy m;
+	Tomasulo t;
 
 	public void parseAll() {
 		ArrayList<String> input = BufferedReaderExample.returnContents();
@@ -50,7 +52,6 @@ public class Parser {
 		int ROBentries = 0;
 		int instruction_buffer_entries = 0;
 		int simulInstrCount = 1;
-		System.out.println(pointer);
 		String[] FUinfo = null;
 		if(input.get(pointer).equals("HardwareOrganization")) {
 			pointer++;
@@ -105,7 +106,6 @@ public class Parser {
 						FUinfo[i] = input.get(pointer).substring(0,3)+",";
 						FUinfo[i] += input.get(pointer).substring(6)+",";
 						pointer++;
-						//System.out.println(pointer);
 						FUinfo[i] += input.get(pointer).substring(10);
 						pointer++;
 					}
@@ -113,10 +113,17 @@ public class Parser {
 				}
 			}
 		}
+		System.out.println(input.get(pointer));
+		int PCbegin = Integer.parseInt(input.get(pointer+1).substring(5));
+		int PCend = PCbegin+ 2*(input.indexOf("endofAssembly") - pointer - 2)-2;
+		System.out.println("PC "+PCend);
+		t = new Tomasulo(ROBentries, instruction_buffer_entries, FUinfo, PCbegin, PCend);
+		parseAssemblyProgram(input);
+		
 	}
 
-	public void parseAssemblyProgram() {
-
+	public void parseAssemblyProgram(ArrayList<String> input) {
+		
 	}
 
 	public void parseProgramData() {
