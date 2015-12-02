@@ -35,8 +35,19 @@ public class InstructionBuffer {
 			head = 0;
 		return i;
 	}
+	
+	public Instruction getInstruction() {
+		return this.instruction_buffer[this.head];
+	}
+	
+	public boolean isEmpty() {
+		for(int i = 0; i < this.instruction_buffer.length; i++) {
+			if(this.instruction_buffer[i] != null)
+				return false;
+		}
+		return true;
+	}
 	public static void main(String[] args) {
-		InstructionBuffer b = new InstructionBuffer(4);
 	}
 
 }

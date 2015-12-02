@@ -1,11 +1,24 @@
 package tomasulo;
 
-public class AddFunctinalUnit {
+public class AddFunctinalUnit extends FunctionalUnit {
 	
 	int cycles;
 	
 	public AddFunctinalUnit(int cycles) {
 		this.cycles = cycles;
+	}
+	
+	public int execute(String type, int op1, int op2) {
+		if(type.toLowerCase().equals("add")) {
+			return add(op1, op2);
+		}
+		else if(type.toLowerCase().equals("subtract")) {
+			return subtract(op1, op2);
+		}
+		else if(type.toLowerCase().equals("nand")) {
+			return nand(op1, op2);
+		}
+		return 1000;
 	}
 
 	public int add(int op1, int op2) {
