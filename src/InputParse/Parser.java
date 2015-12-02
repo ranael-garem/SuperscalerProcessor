@@ -10,6 +10,7 @@ MemoryHierarchy m;
 	public void parseAll() {
 		ArrayList<String> input = BufferedReaderExample.returnContents();
 		parseMemoryHierarchy(input);
+		parseHardwareOrganization(input);
 	}
 	public void parseMemoryHierarchy(ArrayList<String> input) {
 		int memoryCycles = 0;
