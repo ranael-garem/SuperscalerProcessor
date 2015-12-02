@@ -14,6 +14,8 @@ public class Parser {
 		ArrayList<String> input = BufferedReaderExample.returnContents();
 		parseMemoryHierarchy(input);
 		parseHardwareOrganization(input);
+		parseAssemblyProgram(input);
+		parseProgramData(input);
 	}
 
 	public void parseMemoryHierarchy(ArrayList<String> input) {
@@ -118,15 +120,31 @@ public class Parser {
 		int PCend = PCbegin+ 2*(input.indexOf("endofAssembly") - pointer - 2)-2;
 		System.out.println("PC "+PCend);
 		t = new Tomasulo(ROBentries, instruction_buffer_entries, FUinfo, PCbegin, PCend);
-		parseAssemblyProgram(input);
+		//parseAssemblyProgram(input);
 		
 	}
 
 	public void parseAssemblyProgram(ArrayList<String> input) {
-		
+		String temp = "";
+		if(input.get(pointer).equals("AssemblyProgram")){
+			pointer++;
+			int add = Integer.parseInt(input.get(pointer).substring(5));
+			System.out.println(add);
+			pointer++;
+			while(!input.get(pointer).equals("endofAssembly")) {
+				temp = RISCDecoder.decode(input.get(pointer));
+				System.out.println("temp is"+temp);
+				//store lower bite first
+				m.memory.WriteToMemory(add, Integer.parseInt(temp.substring(8)));
+				add++;
+				m.memory.WriteToMemory(add, Integer.parseInt(temp.substring(0,8)));
+				add++;
+				pointer++;
+			}
+		}
 	}
 
-	public void parseProgramData() {
+	public void parseProgramData(ArrayList<String> input) {
 
 	}
 

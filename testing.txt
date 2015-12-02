@@ -20,11 +20,13 @@ LWRS:1
 LWCycles:10
 AssemblyProgram
 .org 100
----
----
----
+LW reg1,reg2,63
+ADD reg2,reg1,reg3
+MUL reg4,reg4,reg1
 endofAssembly
 ProgramData
-"memAdd;Value"
+400;23
+410;54
+501;44
 endofData
 
