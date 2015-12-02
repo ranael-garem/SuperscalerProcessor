@@ -1,0 +1,48 @@
+package tomasulo;
+
+public class AddFunctinalUnit {
+	
+	int cycles;
+	
+	public AddFunctinalUnit(int cycles) {
+		this.cycles = cycles;
+	}
+
+	public int add(int op1, int op2) {
+		return op1 + op2;
+	}
+	
+	public int subtract(int op1, int op2) {
+		return op1 - op2;
+	}
+	
+	public int nand(int op1, int op2) {
+		String bin_op1 = convert_to_binary(op1);
+		String bin_op2 = convert_to_binary(op2);
+		
+		String result = "";
+		for(int i = 0; i < 16; i++) {
+			if(bin_op1.charAt(i) == '1' && bin_op2.charAt(i) == '1')
+				result += '0';
+			else
+				result += '1';
+				
+		}
+		return (int) Long.parseLong(result);
+
+		}
+	
+	public static String convert_to_binary(int decimal) {
+		String res = "";
+		int rem = 0;
+		while (decimal != 0) {
+			rem = decimal % 2;
+			res = rem + res;
+			decimal = decimal / 2;
+		}
+		while(res.length() < 16)
+			res = 0 + res;
+		return res;
+	}
+
+}
