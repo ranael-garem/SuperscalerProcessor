@@ -7,7 +7,7 @@ public class Cache {
 	int blockSize; // (Power of 2)
 	int m; // associativity
 	int cycles; // access time to data
-	String writePolicyHit; // writeBack or WriteThrough
+	String writePolicyHit; // writeBack or writeThrough
 	String writePolicyMiss; // writeAllocate or writeAround 
 	
 	public Set [] sets;
