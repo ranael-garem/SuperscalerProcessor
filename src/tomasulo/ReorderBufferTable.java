@@ -36,5 +36,17 @@ public class ReorderBufferTable {
 			head = 0;
 		return i;
 	}
+	
+	public ReorderBufferEntry getROB() {
+		return this.entries[this.head];
+	}
+	
+	public boolean isEmpty() {
+		for(int i = 0; i < this.entries.length; i++) {
+			if(this.entries[i] != null)
+				return false;
+		}
+		return true;
+	}
 
 }
