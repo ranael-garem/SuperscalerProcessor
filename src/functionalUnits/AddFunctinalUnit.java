@@ -1,4 +1,4 @@
-package tomasulo;
+package functionalUnits;
 
 public class AddFunctinalUnit extends FunctionalUnit {
 	

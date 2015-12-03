@@ -1,4 +1,5 @@
-package tomasulo;
+package functionalUnits;
+
 
 public class MultiplyFunctionalUnit extends FunctionalUnit {
 

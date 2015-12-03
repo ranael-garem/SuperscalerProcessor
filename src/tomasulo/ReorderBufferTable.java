@@ -9,11 +9,27 @@ public class ReorderBufferTable {
 	public ReorderBufferTable(int size) {
 		this.size = size;
 		this.entries = new ReorderBufferEntry[size];
-		for(int i = 0; i < this.entries.length; i++)
-			this.entries[i] = new ReorderBufferEntry();
+//		for(int i = 0; i < this.entries.length; i++)
+//			this.entries[i] = new ReorderBufferEntry();
 		
 	}
+	
+	String type;
+	int Dest; // Destination
+	int value;
+	boolean ready;
 
+	public void printROB() {
+		System.out.println("ROB");
+		System.out.println("Head: " + this.head);
+		System.out.println("Tail: " + this.tail);
+
+		for(int i = 0; i < this.entries.length; i++) {
+			ReorderBufferEntry b = this.entries[i];
+			if(!(b == null))
+				System.out.println("type:" + b.type+",Dest:" + b.Dest + ",Value:"+ b.value + ", Ready:"+b.ready);
+		}
+	}
 	public void addToBuffer(ReorderBufferEntry i) {
 		if (this.entries[tail] == null) {
 			this.entries[tail] = i;
@@ -47,6 +63,14 @@ public class ReorderBufferTable {
 				return false;
 		}
 		return true;
+	}
+
+	public void flush() {
+		for(int i = 0; i < this.entries.length; i++) {
+			this.entries[i] = null;
+		}
+		this.head = 0;
+		this.tail = 0;
 	}
 
 }

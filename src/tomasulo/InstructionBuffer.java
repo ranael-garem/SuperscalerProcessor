@@ -9,7 +9,17 @@ public class InstructionBuffer {
 	public InstructionBuffer(int size) {
 		this.instruction_buffer = new Instruction[size];
 	}
-
+	
+	public void printInstructionBuffer() {
+		System.out.println("Instruction Buffer");
+		System.out.println("Head: " + this.head);
+		System.out.println("Tail: " + this.tail);
+		for (int i = 0; i < this.instruction_buffer.length; i++) {
+			Instruction I = this.instruction_buffer[i];
+			if(!(I == null))
+				System.out.println(I.type);
+		}
+	}
 	public boolean addToBuffer(Instruction i) {
 		if (this.instruction_buffer[tail] == null) {
 			this.instruction_buffer[tail] = i;

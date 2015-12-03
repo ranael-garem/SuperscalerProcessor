@@ -1,5 +1,7 @@
 package tomasulo;
 
+import functionalUnits.FunctionalUnit;
+
 public class ReservationStation {
 	
 	String name;
@@ -15,6 +17,8 @@ public class ReservationStation {
 	int cycles; //Number of cycles To execute by FU
 	int exec_cycles_left; //Number of execution cycles left
 	
+	boolean calculated_address; //For Load Reservation Stations
+	
 	int result;
 	
 	FunctionalUnit FU;
@@ -26,6 +30,18 @@ public class ReservationStation {
 		this.cycles = cycles;
 		this.Qj = -1;
 		this.Qk = -1;
+		this.calculated_address = false;
+		this.exec_cycles_left = this.cycles;
+	}
+	
+	public void flushRS() {
+		this.busy = false;
+		this.op = "";
+		this.Qj = -1;
+		this.Qk = -1;
+		this.calculated_address = false;
+		this.exec_cycles_left = this.cycles;
+		this.result = 0;
 	}
 
 	/**

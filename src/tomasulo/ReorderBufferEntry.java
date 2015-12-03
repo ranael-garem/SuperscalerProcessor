@@ -5,6 +5,9 @@ public class ReorderBufferEntry {
 	int Dest; // Destination
 	int value;
 	boolean ready;
+	
+	int PC_value;
+	
 	public ReorderBufferEntry() {
 		this.type = "";
 	}
