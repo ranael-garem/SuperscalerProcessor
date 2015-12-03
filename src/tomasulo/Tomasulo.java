@@ -245,11 +245,17 @@ public class Tomasulo {
 			
 		}
 	}
-
-
+	public int getCycles() {
+		return cycles;
+	}
+	public int getNumberOfInstructions() {
+		return instructions_completed;
+	}
 	public static void main(String[] args) {
+		
 		// TODO Auto-generated method stub
-
+	 
+		
 	}
 
 }

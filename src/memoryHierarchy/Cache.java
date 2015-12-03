@@ -7,9 +7,34 @@ public class Cache {
 	int blockSize; // (Power of 2)
 	int m; // associativity
 	int cycles; // access time to data
+	public int getCycles() {
+		return cycles;
+	}
+
+	public void setCycles(int cycles) {
+		this.cycles = cycles;
+	}
+
 	String writePolicyHit; // writeBack or writeThrough
 	String writePolicyMiss; // writeAllocate or writeAround 
-	
+	int hits;
+	int misses;
+	public int getHits() {
+		return hits;
+	}
+
+	public void setHits(int hits) {
+		this.hits = hits;
+	}
+
+	public int getMisses() {
+		return misses;
+	}
+
+	public void setMisses(int misses) {
+		this.misses = misses;
+	}
+
 	public Set [] sets;
 	
 	public Cache(int Size, int blockSize, int m, String writePolicyHit, String writePolicyMiss, int cycles) {
@@ -94,9 +119,11 @@ public class Cache {
 		for (int i = 0; i < target.blocks.length; i++) {
 			if (tagBits.equals(target.blocks[i].tag) && target.blocks[i].validBit == 1) {
 				System.out.println("HIT");
+				hits++;
 				return true;
 			}
 		}
+		misses++;
 		System.out.println("MISS");
 		return false;
 	}

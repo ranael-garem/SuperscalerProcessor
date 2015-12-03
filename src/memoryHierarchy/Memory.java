@@ -14,6 +14,16 @@ public class Memory {
 	public void WriteToMemory(int address, int data) {
 		this.mem_array[address] = data;
 	}
+	public int getAccess_time() {
+		return access_time;
+	}
+
+
+	public void setAccess_time(int access_time) {
+		this.access_time = access_time;
+	}
+
+
 	public int ReadFromMemory(int address) {
 		return this.mem_array[address];
 	}
