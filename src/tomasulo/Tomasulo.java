@@ -2,12 +2,16 @@ package tomasulo;
 
 import java.util.ArrayList;
 
+import memoryHierarchy.MemoryHierarchy;
+
 import functionalUnits.AddFunctinalUnit;
 import functionalUnits.JALRFunctionalUnit;
 import functionalUnits.LoadFunctionalUnit;
 import functionalUnits.MultiplyFunctionalUnit;
 
 public class Tomasulo {
+	MemoryHierarchy mem_heirarchy;
+	
 	ReservationStation [] reservation_stations;
 	RegisterFile register_file;
 	RegisterStatusTable register_statuses;
@@ -23,7 +27,6 @@ public class Tomasulo {
 	
 	ArrayList<Integer> RS_indices; // Indices of RSs in the order they were issued
 	
-	int no_instr_completed; // Number of instructions completed
 	int branches;
 	int mispredictions;
 	
@@ -64,10 +67,10 @@ public class Tomasulo {
 				if(type.toLowerCase().equals("add")) {
 					this.reservation_stations[counter].FU = new AddFunctinalUnit(cycles); //Initialize AndFU with number of cycles
 				}
-				else if(type.toLowerCase().equals("multiply")) {
+				else if(type.toLowerCase().equals("mul")) {
 					this.reservation_stations[counter].FU = new MultiplyFunctionalUnit(cycles);
 				}
-				else if(type.toLowerCase().equals("load")) {
+				else if(type.toLowerCase().equals("lw")) {
 					this.reservation_stations[counter].FU = new LoadFunctionalUnit(cycles);
 				}
 				else if(type.toLowerCase().equals("jalr")) {
@@ -84,10 +87,14 @@ public class Tomasulo {
 	
 	public void fetch() {
 		if(PC != PC_END && !jump_stall) {
-			//TODO readFromMemory(PC) Will return 2 bytes
-			//TODO change 2 bytes to Instruction Object
-			Instruction I = new Instruction();
+			String address = Integer.toBinaryString(PC);
+			while(address.length() < 16)
+				address = "0" + address;
+			
+
+			Instruction I = new Instruction(getInstructionFromMem(PC));
 			this.instruction_buffer.addToBuffer(I);
+			
 			if(jumpFetchCheck(I)) // Change PC to Jump address if instruction is Jump
 				return;
 			if(returnFetchCheck(I)) // Change PC to Jump address if instruction is Return
@@ -101,6 +108,25 @@ public class Tomasulo {
 
 		}
 		else return; // Program ended, No More instructions to fetch
+	}
+	
+	public String getInstructionFromMem(int PC) {
+		String address = Integer.toBinaryString(PC);
+		while(address.length() < 16)
+			address = "0" + address;
+		
+		String low_byte = Integer.toBinaryString(mem_heirarchy.read(address));	
+		while(low_byte.length() < 8)
+			low_byte = "0" + low_byte;
+		
+		address = Integer.toBinaryString(PC + 1);
+		while(address.length() < 16)
+			address = "0" + address;
+		String high_byte = Integer.toBinaryString(mem_heirarchy.read(address));	
+		while(high_byte.length() < 8)
+			high_byte = "0" + high_byte;
+		
+		return high_byte + low_byte;
 	}
 	
 	private boolean branchFetchCheck(Instruction I) {
@@ -170,7 +196,7 @@ public class Tomasulo {
 		}
 		return false; // Intruction is not return
 	}
-	//TODO NOW ONLY FOR ADD AND MULTIPLY AND LOAD AND STORE
+
 	public void issue() {
 		
 		if(this.instruction_buffer.getInstruction() == null) {
@@ -281,10 +307,10 @@ public class Tomasulo {
 			type = "add";
 		}
 		else if(i.type.equals("multiply")) {
-			type = "multiply";
+			type = "mul";
 		}
 		else if(i.type.equals("load") || i.type.equals("store")) {
-			type = "load";
+			type = "lw";
 		}
 		else if(i.type.equals("jalr")) {
 			type = "jalr";
@@ -505,9 +531,11 @@ public class Tomasulo {
 		}
 	}
 
-	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-
+	public int getCycles() {
+		return cycles;
+	}
+	public int getNumberOfInstructions() {
+		return instructions_completed;
 	}
 
 }
