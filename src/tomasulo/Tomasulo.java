@@ -13,7 +13,7 @@ public class Tomasulo {
 	MemoryHierarchy mem_heirarchy;
 	
 	ReservationStation [] reservation_stations;
-	RegisterFile register_file;
+	RegisterFile register_file; //TODO REGISTER 0 is Final
 	RegisterStatusTable register_statuses;
 	ReorderBufferTable reorder_buffer;
 	InstructionBuffer instruction_buffer;
@@ -25,7 +25,8 @@ public class Tomasulo {
 	int PC; // PC register pointing to the instruction to be fetched
 	int PC_END; //Address of PC where program ends
 	
-	ArrayList<Integer> RS_indices; // Indices of RSs in the order they were issued
+	ArrayList<Integer> RS_indices; // Indices of RSs in the order they were issued 
+	//TODO writing can be out of order
 	
 	int branches;
 	int mispredictions;
@@ -85,13 +86,9 @@ public class Tomasulo {
 
 	}
 	
-	public void fetch() {
-		if(PC != PC_END && !jump_stall) {
-			String address = Integer.toBinaryString(PC);
-			while(address.length() < 16)
-				address = "0" + address;
+	public void fetch() { // TODO JUMP STALL
+		if(PC != PC_END && !jump_stall && !this.instruction_buffer.isFull()) {
 			
-
 			Instruction I = new Instruction(getInstructionFromMem(PC));
 			this.instruction_buffer.addToBuffer(I);
 			
@@ -115,14 +112,14 @@ public class Tomasulo {
 		while(address.length() < 16)
 			address = "0" + address;
 		
-		String low_byte = Integer.toBinaryString(mem_heirarchy.read(address));	
+		String low_byte = Integer.toBinaryString(mem_heirarchy.read_instruction(address));	
 		while(low_byte.length() < 8)
 			low_byte = "0" + low_byte;
 		
 		address = Integer.toBinaryString(PC + 1);
 		while(address.length() < 16)
 			address = "0" + address;
-		String high_byte = Integer.toBinaryString(mem_heirarchy.read(address));	
+		String high_byte = Integer.toBinaryString(mem_heirarchy.read_instruction(address));	
 		while(high_byte.length() < 8)
 			high_byte = "0" + high_byte;
 		

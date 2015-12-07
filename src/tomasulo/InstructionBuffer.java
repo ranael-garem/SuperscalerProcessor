@@ -60,4 +60,9 @@ public class InstructionBuffer {
 	public static void main(String[] args) {
 	}
 
+	public boolean isFull() {
+		
+		return this.instruction_buffer[tail] != null;
+	}
+
 }

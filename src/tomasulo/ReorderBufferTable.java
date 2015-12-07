@@ -13,11 +13,6 @@ public class ReorderBufferTable {
 //			this.entries[i] = new ReorderBufferEntry();
 		
 	}
-	
-	String type;
-	int Dest; // Destination
-	int value;
-	boolean ready;
 
 	public void printROB() {
 		System.out.println("ROB");
@@ -30,6 +25,7 @@ public class ReorderBufferTable {
 				System.out.println("type:" + b.type+",Dest:" + b.Dest + ",Value:"+ b.value + ", Ready:"+b.ready);
 		}
 	}
+	
 	public void addToBuffer(ReorderBufferEntry i) {
 		if (this.entries[tail] == null) {
 			this.entries[tail] = i;

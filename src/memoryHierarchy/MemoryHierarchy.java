@@ -7,7 +7,8 @@ public class MemoryHierarchy {
 	
 	public MemoryHierarchy(int mem_access_time, int cacheLevels, String[] cacheInfo) {
 		this.memory = new Memory(mem_access_time);
-		this.caches = new Cache[cacheLevels];
+		this.caches = new Cache[cacheLevels + 1];
+		int j = 0;
 		for (int i = 0; i < this.caches.length; i++) {
 			String [] cacheAttrs = cacheInfo[i].split(",");
 			
@@ -17,16 +18,58 @@ public class MemoryHierarchy {
 			String writePolicyHit = cacheAttrs[3];
 			String writePolicyMiss = cacheAttrs[4];
 			int cycles = Integer.parseInt(cacheAttrs[5]);
-			
-			this.caches[i] = new Cache(cacheSize, blockSize, m, writePolicyHit, writePolicyMiss, cycles);
+			if(i == 0) {
+				this.caches[j] = new Cache(cacheSize / 2, blockSize, m, writePolicyHit, writePolicyMiss, cycles); //Instruction Cache
+				this.caches[j+1] = new Cache(cacheSize / 2, blockSize, m, writePolicyHit, writePolicyMiss, cycles); // Data Cache
+				j += 2;
+			}
+			else {
+				this.caches[j] = new Cache(cacheSize, blockSize, m, writePolicyHit, writePolicyMiss, cycles);
+				j++;
+			}
 		}
 	}
-	
 
-	public  int read(String address) {
+	public  int read_instruction(String address) {
 		// Takes a binary address and returns corresponding value of address
 		Block to_be_cached;
+		int k;
 		for (int i = 0; i <= this.caches.length; i++) {
+			if((i - 1) == 1 )
+				k = 0;
+			else
+				k = i - 1;
+			
+			if (i != 1) { // Skip Data cache
+				if (i == this.caches.length) { 
+					to_be_cached = read_block_from_memory(address);
+					String indexBits = address.substring(this.caches[k].getTag(), 16 - this.caches[i-1].getOffset());
+					writeBlock(to_be_cached, indexBits, k); // write block to the level where it missed
+					i = i-2;
+				} else {
+				if (caches[i].hitOrMiss(address)) {
+					if (i == 0) {
+						// Hit in the first level
+						return caches[i].read(address);
+					} else {
+							to_be_cached = read_from_lower_level(i, address, true);	// Read block from lower level
+						
+							String indexBits = address.substring(this.caches[k].getTag(), 16 - this.caches[k].getOffset());
+							writeBlock(to_be_cached, indexBits, k); // write block to the level where it missed
+							i = i-2;
+						}
+					} 
+				}
+			}
+		}
+		return 0;
+	}
+
+
+	public  int read_data(String address) {
+		// Takes a binary address and returns corresponding value of address
+		Block to_be_cached;
+		for (int i = 1; i <= this.caches.length; i++) {
 			if (i == this.caches.length) { 
 				to_be_cached = read_block_from_memory(address);
 				String indexBits = address.substring(this.caches[i-1].getTag(), 16 - this.caches[i-1].getOffset());
@@ -34,27 +77,33 @@ public class MemoryHierarchy {
 				i = i-2;
 			} else {
 			if (caches[i].hitOrMiss(address)) {
-				if (i == 0) {
+				if (i == 1) {
 					// Hit in the first level
 					return caches[i].read(address);
 				} else {
-						to_be_cached = read_from_lower_level(i, address);	// Read block from lower level
+						to_be_cached = read_from_lower_level(i, address, false);	// Read block from lower level
 					
 						String indexBits = address.substring(this.caches[i-1].getTag(), 16 - this.caches[i-1].getOffset());
 						writeBlock(to_be_cached, indexBits, i - 1); // write block to the level where it missed
 						i = i-2;
-				}
-			} 
+					}
+				} 
 			}
 		}
 		return 0;
-		
 	}
 	
-	public Block read_from_lower_level(int i, String address) {
+	public Block read_from_lower_level(int i, String address, boolean instructionOrNot) {
+		//boolean instructionOrNot ==> Reading an instruction
 		// Reads a block from cache, corresponding to an address
 		Cache current_cache = this.caches[i]; // The cache data is read from
-		int target_block_size = this.caches[i-1].blockSize; //Size of block in the cache data will be written to
+		int target_block_size;
+
+		if (instructionOrNot && i == 2)
+			target_block_size = this.caches[0].blockSize; //Size of block in the cache data will be written to
+		else
+			target_block_size = this.caches[i - 1].blockSize;
+		
 		int address_value = (int) Long.parseLong(address, 2); // Decimal value of the address of the target byte
 		int address_pointer = address_value % target_block_size; // Index of the byte in the block to be returned
 		int address_beg = address_value - address_pointer; // The address of the first byte in the block to be returned
@@ -102,9 +151,13 @@ public class MemoryHierarchy {
 		int random_index_block = (int) (Math.random() * this.caches[cacheLevel].m);
 		Block block_to_be_replaced = set.blocks[random_index_block];
 		if (set.blocks[random_index_block].dirtyBit == 1) {
-			// block address
+			// block address: First byte of the block to be replaced
 			String block_to_be_replacded_addr = block_to_be_replaced.tag + indexBits + (mask(16-indexBits.length()-block_to_be_replaced.tag.length()));
-			replaceBlock(i + 1, block_to_be_replacded_addr, set.blocks[random_index_block]);
+			if(cacheLevel == 0)
+				replaceBlock(cacheLevel + 2, block_to_be_replacded_addr, set.blocks[random_index_block]);
+			else 
+				replaceBlock(cacheLevel + 1, block_to_be_replacded_addr, set.blocks[random_index_block]);
+
 		}
 		set.blocks[random_index_block] = block;
 		return;
@@ -112,8 +165,7 @@ public class MemoryHierarchy {
 	
 	public void replaceBlock(int cacheLevel, String block_address, Block block_to_be_replaced) {
 		// Write the replaced dirty block in cacheLevel or memory
-		Cache cache = this.caches[cacheLevel]; // Cache Level where block will e=be written to
-		if(cacheLevel == this.caches.length - 1) { // If last level of cache
+		if(cacheLevel == this.caches.length) { // If last level of cache
 			int address_value = (int) Long.parseLong(block_address,2);
 			for(int i = 0; i < this.caches[cacheLevel -1].blockSize; i++) { //Write block byte by byte to memory
 				memory.WriteToMemory(address_value, block_to_be_replaced.bytes[i]);
@@ -121,6 +173,8 @@ public class MemoryHierarchy {
 			}
 			return;
 		} else {
+			Cache cache = this.caches[cacheLevel]; // Cache Level where block will e=be written to
+
 			String block_address_save = block_address;
 		for(int i = 0; i < this.caches[cacheLevel -1].blockSize; i++) { // Write block byte by byte in cache
 			cache.write(block_address, block_to_be_replaced.bytes[i]);
@@ -136,21 +190,20 @@ public class MemoryHierarchy {
 		
 	}
 
-
 	
 	public void write(String address, int data) {
-		if (caches[0].hitOrMiss(address)) {
-			write_to_cache(0, address, data);
+		if (caches[1].hitOrMiss(address)) {
+			write_to_cache(1, address, data);
 		}
 		else {
-			read(address);
-			write_to_cache(0, address, data);
+			read_data(address);
+			write_to_cache(1, address, data);
 		}
 	}
 	
 	public void write_to_cache(int cache_level, String address, int data) {
 		// Write data in cache, and continues writing through if cache's writePolicyHit is writeThrough
-		if(cache_level == this.caches.length - 1) {
+		if(cache_level == this.caches.length) {
 			int address_value = (int) Long.parseLong(address,2);
 			memory.WriteToMemory(address_value, data);
 			return;
@@ -184,6 +237,8 @@ public class MemoryHierarchy {
 		return res;
 	}
 	
+	
+
 	public  void printHierarchyInfo() {
 		for (int i = 0; i < this.caches.length; i++) {
 			System.out.println("Cache Level " + i +": ");
@@ -191,4 +246,5 @@ public class MemoryHierarchy {
 			System.out.println("---------------------");
 		}
 	}
+
 }

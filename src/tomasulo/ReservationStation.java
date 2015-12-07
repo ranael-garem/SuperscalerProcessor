@@ -13,6 +13,7 @@ public class ReservationStation {
 	int Qk;
 	int dest;
 	int A;
+	
 	boolean start_execute;
 	int cycles; //Number of cycles To execute by FU
 	int exec_cycles_left; //Number of execution cycles left
