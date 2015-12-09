@@ -111,15 +111,16 @@ public class Parser {
 						FUinfo[i] += input.get(pointer).substring(10);
 						pointer++;
 					}
-					System.out.println(FUinfo[i]);
+//					System.out.println(FUinfo[i]);
 				}
 			}
 		}
-		System.out.println(input.get(pointer));
+//		System.out.println(input.get(pointer));
 		int PCbegin = Integer.parseInt(input.get(pointer+1).substring(5));
 		int PCend = PCbegin+ 2*(input.indexOf("endofAssembly") - pointer - 2)-2;
-		System.out.println("PC "+(PCend + 2));
+//		System.out.println("PC "+(PCend + 2));
 		t = new Tomasulo(ROBentries, instruction_buffer_entries, FUinfo, PCbegin, PCend);
+		t.mem_heirarchy = this.m;
 		//parseAssemblyProgram(input);
 		
 	}
@@ -129,15 +130,15 @@ public class Parser {
 		if(input.get(pointer).equals("AssemblyProgram")){
 			pointer++;
 			int add = Integer.parseInt(input.get(pointer).substring(5));
-			System.out.println(add);
+//			System.out.println(add);
 			pointer++;
 			while(!input.get(pointer).equals("endofAssembly")) {
 				temp = RISCDecoder.decode(input.get(pointer));
-				System.out.println("temp is"+temp);
+//				System.out.println("temp is"+temp);
 				//store lower byte first
-				m.memory.WriteToMemory(add, Integer.parseInt(temp.substring(8)));
+				m.memory.WriteToMemory(add, (int)Long.parseLong((temp.substring(8)), 2));
 				add++;
-				m.memory.WriteToMemory(add, Integer.parseInt(temp.substring(0,8)));
+				m.memory.WriteToMemory(add, (int) Long.parseLong((temp.substring(0,8)),2));
 				add++;
 				pointer++;
 			}
@@ -148,39 +149,43 @@ public class Parser {
 		pointer++;
 		String[] temp = new String[2];
 		if(input.get(pointer).equals("ProgramData")){
-			System.out.println("Final Part------------");
+//			System.out.println("Final Part------------");
 			pointer++;
 			while(!input.get(pointer).equals("endofData")) {
 				temp = input.get(pointer).split(";");
-				System.out.println(temp[0]+"---------"+temp[1]);
+//				System.out.println(temp[0]+"---------"+temp[1]);
 				m.memory.WriteToMemory(Integer.parseInt(temp[0]), Integer.parseInt(temp[1]));
 				pointer++;
 			}
-			System.out.println("----------------");
-			System.out.println("Done");
+//			System.out.println("----------------");
+//			System.out.println("Done");
 		}
 	}
 
 	public static void main(String[] args) {
 		Parser s = new Parser();
 		s.parseAll();
-		System.out.println("Total Execution Time "+ s.t.getCycles());
-		System.out.println("IPC "+ s.t.getNumberOfInstructions()/s.t.getCycles());
-		for(int i = 0; i < s.m.caches.length; i++) {
-			System.out.println("For Cache Level "+(i+1)+""+ 
-		s.m.caches[i].getHits()/(s.m.caches[i].getHits()+s.m.caches[i].getMisses()));
-		}
-		int amat=0;
-		int temp=0;
-		for(int j = s.m.caches.length; j>0; j--) {
-			temp = s.m.caches[j].getCycles() + 
-					(s.m.caches[j].getMisses()/(s.m.caches[j].getHits()+s.m.caches[j].getMisses()))* 
-					s.m.memory.getAccess_time();
-			amat=s.m.caches[j-1].getCycles() + 
-					(s.m.caches[j-1].getMisses()/(s.m.caches[j-1].getHits()+s.m.caches[j-1].getMisses()))* 
-					temp;
-		}
-		System.out.println("The AMAT of simulation is "+amat);
+//		s.m.memory.print_part_memory(100, 101);
+		s.t.register_file.registers[1] = 1;
+		s.t.Simulation();
+		
+//		System.out.println("Total Execution Time "+ s.t.getCycles());
+//		System.out.println("IPC "+ s.t.getNumberOfInstructions()/s.t.getCycles());
+//		for(int i = 0; i < s.m.caches.length; i++) {
+//			System.out.println("For Cache Level "+(i+1)+""+ 
+//		s.m.caches[i].getHits()/(s.m.caches[i].getHits()+s.m.caches[i].getMisses()));
+//		}
+//		int amat=0;
+//		int temp=0;
+//		for(int j = s.m.caches.length; j>0; j--) {
+//			temp = s.m.caches[j].getCycles() + 
+//					(s.m.caches[j].getMisses()/(s.m.caches[j].getHits()+s.m.caches[j].getMisses()))* 
+//					s.m.memory.getAccess_time();
+//			amat=s.m.caches[j-1].getCycles() + 
+//					(s.m.caches[j-1].getMisses()/(s.m.caches[j-1].getHits()+s.m.caches[j-1].getMisses()))* 
+//					temp;
+//		}
+//		System.out.println("The AMAT of simulation is "+amat);
 		
 	}
 }

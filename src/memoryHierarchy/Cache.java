@@ -7,6 +7,7 @@ public class Cache {
 	int blockSize; // (Power of 2)
 	int m; // associativity
 	int cycles; // access time to data
+
 	public int getCycles() {
 		return cycles;
 	}
@@ -74,11 +75,17 @@ public class Cache {
 	public int read(String address) {
 		// Returns a byte corresponding to a binary address //
 		String tagBits = address.substring(0, getTag());
-		String indexBits = address.substring(getTag(), 16 - getOffset());
 		String offsetBits = address.substring(16 - getOffset(), 16);
-		int index = (int) Long.parseLong(indexBits, 2);
 		int offset = (int) Long.parseLong(offsetBits, 2);
-		Set target = this.sets[index];
+		Set target;
+		if(getIndex() == 0)
+			target = this.sets[0];
+		else {
+			String indexBits = address.substring(getTag(), 16 - getOffset());
+			int index = (int) Long.parseLong(indexBits, 2);
+			target = this.sets[index];
+		}
+
 		Block target_block;
 		for (int i = 0; i < target.blocks.length; i++) {
 			if (tagBits.equals(target.blocks[i].tag) && target.blocks[i].validBit == 1) {
@@ -110,21 +117,28 @@ public class Cache {
 	}
 
 	public boolean hitOrMiss(String address) {
+		System.out.println(address);
 		String tagBits = address.substring(0, getTag());
-		String indexBits = address.substring(getTag(), 16 - getOffset());
-		int index = (int) Long.parseLong(indexBits, 2);
-		int tag = (int ) Long.parseLong(tagBits, 2);
+		Set target;
+		if(getIndex() != 0) {
+			String indexBits = address.substring(getTag(), 16 - getOffset());
+			int index = (int) Long.parseLong(indexBits, 2);
+			target = this.sets[index];	
+		}
+		else {
+			target = this.sets[0];
+		}
+
 		
-		Set target = this.sets[index];
 		for (int i = 0; i < target.blocks.length; i++) {
 			if (tagBits.equals(target.blocks[i].tag) && target.blocks[i].validBit == 1) {
-				System.out.println("HIT");
+//				System.out.println("HIT");
 				hits++;
 				return true;
 			}
 		}
 		misses++;
-		System.out.println("MISS");
+//		System.out.println("MISS");
 		return false;
 	}
 

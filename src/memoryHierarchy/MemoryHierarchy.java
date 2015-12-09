@@ -4,12 +4,14 @@ package memoryHierarchy;
 public class MemoryHierarchy {
 	public Memory memory;
 	public Cache[] caches;
+	boolean currently_fetching;
+	int fetch_cycles_left;
 	
 	public MemoryHierarchy(int mem_access_time, int cacheLevels, String[] cacheInfo) {
 		this.memory = new Memory(mem_access_time);
 		this.caches = new Cache[cacheLevels + 1];
 		int j = 0;
-		for (int i = 0; i < this.caches.length; i++) {
+		for (int i = 0; i < cacheInfo.length; i++) {
 			String [] cacheAttrs = cacheInfo[i].split(",");
 			
 			int cacheSize = Integer.parseInt(cacheAttrs[0]);
@@ -30,6 +32,62 @@ public class MemoryHierarchy {
 		}
 	}
 
+	public boolean done_fetching(String address) {
+		if(!currently_fetching) {
+			for (int i = 0; i <= this.caches.length; i++) {
+				if(i != 1) {
+					if(i == this.caches.length) {
+						this.fetch_cycles_left += this.memory.access_time;
+						this.currently_fetching = true;
+						break;
+					}
+						
+					if (caches[i].hitOrMiss(address)) {
+						this.fetch_cycles_left += caches[i].cycles;
+//						System.out.println("cache " + this.fetch_cycles_left);
+
+						this.currently_fetching = true;
+						break;
+					}
+					else {
+						this.fetch_cycles_left += caches[i].cycles;
+					}
+				}
+			}
+		}
+
+		if (fetch_cycles_left == 1) {
+			this.fetch_cycles_left = 0;
+			this.currently_fetching = false;
+			return true;
+		}
+		else {
+
+			fetch_cycles_left --;
+			return false;
+		}
+	}
+	
+	public int load_cycles_left(String address) {
+		int cycles = 0;
+		for (int i = 1; i <= this.caches.length; i++) {
+				if(i == this.caches.length) {
+					cycles += this.memory.access_time;
+					break;
+				}
+					
+				if (caches[i].hitOrMiss(address)) {
+					cycles += caches[i].cycles;
+//					System.out.println("cache " + this.fetch_cycles_left);
+					break;
+				}
+				else {
+					cycles += caches[i].cycles;
+				}
+			}
+		return cycles;
+	}
+	
 	public  int read_instruction(String address) {
 		// Takes a binary address and returns corresponding value of address
 		Block to_be_cached;
@@ -43,9 +101,11 @@ public class MemoryHierarchy {
 			if (i != 1) { // Skip Data cache
 				if (i == this.caches.length) { 
 					to_be_cached = read_block_from_memory(address);
-					String indexBits = address.substring(this.caches[k].getTag(), 16 - this.caches[i-1].getOffset());
+					String indexBits = address.substring(this.caches[k].getTag(), 16 - this.caches[k].getOffset());
 					writeBlock(to_be_cached, indexBits, k); // write block to the level where it missed
 					i = i-2;
+					if(i == 0)
+						i = -1;
 				} else {
 				if (caches[i].hitOrMiss(address)) {
 					if (i == 0) {
@@ -57,6 +117,8 @@ public class MemoryHierarchy {
 							String indexBits = address.substring(this.caches[k].getTag(), 16 - this.caches[k].getOffset());
 							writeBlock(to_be_cached, indexBits, k); // write block to the level where it missed
 							i = i-2;
+							if(i == 0)
+								i = -1;
 						}
 					} 
 				}
@@ -138,7 +200,11 @@ public class MemoryHierarchy {
 	
 	public void writeBlock(Block block, String indexBits, int cacheLevel) {
 		// Writes a block in a given set, Using random replacement
-		int index_value = (int) Long.parseLong(indexBits, 2);
+		int index_value;
+		if(indexBits.equals(""))
+			index_value = 0;
+		else
+		   index_value = (int) Long.parseLong(indexBits, 2);
 		Set set = this.caches[cacheLevel].sets[index_value]; // Set where block should be written
 		int i;
 		for(i = 0; i < set.blocks.length; i++) {

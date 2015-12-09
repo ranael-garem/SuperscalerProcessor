@@ -45,7 +45,7 @@ public class MemoryHierarchyTestCase {
 			addresses_str[i] = convert_to_binary(addresses[i]);
 		}
 		for(int j = 0; j < addresses_str.length; j++)
-			System.out.println(memoryHeirarchy.read(addresses_str[j]));
+			System.out.println(memoryHeirarchy.read_data(addresses_str[j]));
 		
 		memoryHeirarchy.caches[0].printCache();
 

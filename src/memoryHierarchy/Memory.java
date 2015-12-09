@@ -39,6 +39,8 @@ public class Memory {
 	
 	public void print_part_memory(int beg, int end) {
 		for(int i = beg; i <= end; i++) {
+			System.out.println("Binary" + Integer.toBinaryString(mem_array[i]));
+
 			System.out.print("Addr: "+i+ " Value: "+ mem_array[i]+", ");
 			if (i % 10 == 0)
 				System.out.println();

@@ -43,16 +43,16 @@ public class Instruction {
 		else if(function_code.equals("0011"))
 			this.type = "multiply";
 
-		this.rd = (int) Long.parseLong(instruction.substring(3, 6));
-		this.rs = (int) Long.parseLong(instruction.substring(6, 9));
-		this.rt = (int) Long.parseLong(instruction.substring(9, 12));
+		this.rd = (int) Long.parseLong(instruction.substring(3, 6), 2);
+		this.rs = (int) Long.parseLong(instruction.substring(6, 9), 2);
+		this.rt = (int) Long.parseLong(instruction.substring(9, 12), 2);
 
 			
 	}
 	private void ret(String instruction) {
 		// ret rs
 		this.type = "return";
-		this.rs = (int) Long.parseLong(instruction.substring(3, 6));
+		this.rs = (int) Long.parseLong(instruction.substring(3, 6), 2);
 		this.rt = -1;
 		this.rd = -1;
 	}
@@ -60,7 +60,7 @@ public class Instruction {
 	private void jump(String instruction) {
 		// jmp rs, imm
 		this.type = "jump";
-		this.rs = (int) Long.parseLong(instruction.substring(3, 6));
+		this.rs = (int) Long.parseLong(instruction.substring(3, 6), 2);
 		this.rd = -1;
 		this.rt = -1;
 		String imm = instruction.substring(6,13);
@@ -70,8 +70,8 @@ public class Instruction {
 	private void addi(String instruction) {
 		// addi rd, rs, imm
 		this.type = "addi";
-		this.rd = (int) Long.parseLong(instruction.substring(3, 6));
-		this.rs = (int) Long.parseLong(instruction.substring(6, 9));
+		this.rd = (int) Long.parseLong(instruction.substring(3, 6), 2);
+		this.rs = (int) Long.parseLong(instruction.substring(6, 9), 2);
 		this.rt = -1;
 		String imm = instruction.substring(9);
 		this.imm = convertToDecimal(imm);		
@@ -80,8 +80,8 @@ public class Instruction {
 	private void beq(String instruction) {
 		// BEQ rs, rt, imm
 		this.type = "branch";
-		this.rs = (int) Long.parseLong(instruction.substring(3, 6));
-		this.rt = (int) Long.parseLong(instruction.substring(6, 9));
+		this.rs = (int) Long.parseLong(instruction.substring(3, 6), 2);
+		this.rt = (int) Long.parseLong(instruction.substring(6, 9), 2);
 		this.rd = -1;
 		String imm = instruction.substring(9);
 		this.imm = convertToDecimal(imm);
@@ -91,16 +91,16 @@ public class Instruction {
 	private void jalr(String instruction) {
 		// jalr rd, rs
 		this.type = "jalr";
-		this.rd = (int) Long.parseLong(instruction.substring(3, 6));
-		this.rs = (int) Long.parseLong(instruction.substring(6, 9));
+		this.rd = (int) Long.parseLong(instruction.substring(3, 6), 2);
+		this.rs = (int) Long.parseLong(instruction.substring(6, 9), 2);
 		this.rt = -1;
 	}
 	
 	private void store(String instruction) {
 		// SW rs, rt, imm
 		this.type = "store";
-		this.rs = (int) Long.parseLong(instruction.substring(3, 6));
-		this.rt = (int) Long.parseLong(instruction.substring(6, 9));
+		this.rs = (int) Long.parseLong(instruction.substring(3, 6), 2);
+		this.rt = (int) Long.parseLong(instruction.substring(6, 9), 2);
 		String imm = instruction.substring(9);
 		this.imm = convertToDecimal(imm);
 		this.rd = -1;
@@ -109,11 +109,15 @@ public class Instruction {
 	private void load(String instruction) {
 		//LW, rd, rs, imm
 		this.type = "load";
-		this.rd = (int) Long.parseLong(instruction.substring(3, 6));
-		this.rs = (int) Long.parseLong(instruction.substring(6, 9));
+		this.rd = (int) Long.parseLong(instruction.substring(3, 6), 2);
+		this.rs = (int) Long.parseLong(instruction.substring(6, 9), 2);
 		this.rt = -1;
 		String imm = instruction.substring(9);
+		System.out.println("IMMEDIATE" + imm);
+
+		System.out.println("IMMEDIATE" + imm);
 		this.imm = convertToDecimal(imm);
+
 	}
 	
 	public Instruction(int rs, int rt, int rd, int imm, String type) {

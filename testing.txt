@@ -13,19 +13,18 @@ simultaneousIssuesOfInstructions:3
 sizeInstructionBuffer:10
 sizeOfROB:4
 ADDRS:2
-ADDCycles:6
+ADDCycles:2
 MULRS:2
 MULCycles:7
 LWRS:1
 LWCycles:10
 AssemblyProgram
 .org 100
-LW reg1,reg2,63
-ADD reg2,reg1,reg3
-MUL reg4,reg4,reg1
+ADDI reg2,reg1,5
+ADD reg4,reg2,reg2
 endofAssembly
 ProgramData
-400;23
+50;7
 410;54
 501;44
 endofData
