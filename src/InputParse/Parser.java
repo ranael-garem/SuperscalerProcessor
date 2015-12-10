@@ -136,9 +136,9 @@ public class Parser {
 				temp = RISCDecoder.decode(input.get(pointer));
 //				System.out.println("temp is"+temp);
 				//store lower byte first
-				m.memory.WriteToMemory(add, (int)Long.parseLong((temp.substring(8)), 2));
+				m.memory.WriteToMemory(add, temp.substring(8));
 				add++;
-				m.memory.WriteToMemory(add, (int) Long.parseLong((temp.substring(0,8)),2));
+				m.memory.WriteToMemory(add, (temp.substring(0,8)));
 				add++;
 				pointer++;
 			}
@@ -154,19 +154,32 @@ public class Parser {
 			while(!input.get(pointer).equals("endofData")) {
 				temp = input.get(pointer).split(";");
 //				System.out.println(temp[0]+"---------"+temp[1]);
-				m.memory.WriteToMemory(Integer.parseInt(temp[0]), Integer.parseInt(temp[1]));
+				String data = convertToBinary(Integer.parseInt(temp[1]));
+				m.memory.WriteToMemory(Integer.parseInt(temp[0]), data.substring(8));
+				m.memory.WriteToMemory((Integer.parseInt(temp[0]) + 1), data.substring(0,8));
 				pointer++;
 			}
 //			System.out.println("----------------");
 //			System.out.println("Done");
 		}
 	}
+	
+	public String convertToBinary(int x) {
+		String temp = Integer.toBinaryString(x);
+		if (x >= 0) {
+			while(temp.length() < 16)
+				temp = "0" + temp;
+		}
+		else {
+			temp = temp.substring(16);
+		}
+		return temp;
+	}
 
 	public static void main(String[] args) {
 		Parser s = new Parser();
 		s.parseAll();
 //		s.m.memory.print_part_memory(100, 101);
-		s.t.register_file.registers[1] = 1;
 		s.t.Simulation();
 		
 //		System.out.println("Total Execution Time "+ s.t.getCycles());

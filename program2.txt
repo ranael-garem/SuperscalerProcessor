@@ -1,0 +1,36 @@
+MemoryHierarchy
+numberOfCacheLevels:1
+Cache1
+S:256
+L:32
+M:4
+writePolicyHit:writeThrough
+writePolicyMiss:writeAllocate
+cacheCycles:1
+mainMemoryCycles:2
+HardwareOrganization
+simultaneousIssuesOfInstructions:3
+sizeInstructionBuffer:10
+sizeOfROB:4
+ADDRS:2
+ADDCycles:2
+MULRS:2
+MULCycles:7
+LWRS:1
+LWCycles:10
+AssemblyProgram
+.org 100
+LW reg1,reg2,50
+LW reg4,reg2,52
+ADD reg2,reg2,reg1
+SUB reg4,reg4,reg1
+BEQ reg4,reg0,2
+JMP reg0, -8
+ADDI reg5,reg5,8
+endofAssembly
+ProgramData
+50;1
+52;90
+501;44
+endofData
+

@@ -9,16 +9,25 @@ public class AddFunctinalUnit extends FunctionalUnit {
 	}
 	
 	public int execute(String type, int op1, int op2) {
-		if(type.toLowerCase().equals("add")) {
+		if(type.toLowerCase().equals("add") || type.toLowerCase().equals("addi")) {
 			return add(op1, op2);
 		}
 		else if(type.toLowerCase().equals("subtract")) {
 			return subtract(op1, op2);
 		}
-		else if(type.toLowerCase().equals("nand")) {
+		else if(type.toLowerCase().equals("branch")) {
+			return branch(op1, op2);
+		}else {
+			
 			return nand(op1, op2);
 		}
-		return 1000;
+	}
+
+	private int branch(int op1, int op2) {
+		if (op1 == op2)
+			return 1;
+		else
+			return 0;
 	}
 
 	public int add(int op1, int op2) {

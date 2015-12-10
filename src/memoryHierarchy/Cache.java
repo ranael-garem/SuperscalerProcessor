@@ -72,7 +72,7 @@ public class Cache {
 	public int getTag() {
 		return 16 - (getIndex() + getOffset());
 	}
-	public int read(String address) {
+	public String read(String address) {
 		// Returns a byte corresponding to a binary address //
 		String tagBits = address.substring(0, getTag());
 		String offsetBits = address.substring(16 - getOffset(), 16);
@@ -94,10 +94,10 @@ public class Cache {
 			}
 		}
 		
-		return -1;		
+		return null;		
 	}
 	
-	public void write(String address, int data) {
+	public void write(String address, String data) {
 		// writes a single byte corresponding to a binary address //
 		String tagBits = address.substring(0, getTag());
 		String indexBits = address.substring(getTag(), 16 - getOffset());
@@ -117,7 +117,6 @@ public class Cache {
 	}
 
 	public boolean hitOrMiss(String address) {
-		System.out.println(address);
 		String tagBits = address.substring(0, getTag());
 		Set target;
 		if(getIndex() != 0) {

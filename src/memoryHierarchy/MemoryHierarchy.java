@@ -4,7 +4,7 @@ package memoryHierarchy;
 public class MemoryHierarchy {
 	public Memory memory;
 	public Cache[] caches;
-	boolean currently_fetching;
+	public boolean currently_fetching;
 	int fetch_cycles_left;
 	
 	public MemoryHierarchy(int mem_access_time, int cacheLevels, String[] cacheInfo) {
@@ -88,7 +88,27 @@ public class MemoryHierarchy {
 		return cycles;
 	}
 	
-	public  int read_instruction(String address) {
+	
+	public int store_cycles_left(String address) {
+		int cycles = load_cycles_left(address); // Write misses cycles
+		for (int i = 1; i <= this.caches.length; i++) {
+			if(i == this.caches.length) {
+				cycles += this.memory.access_time;
+				break;
+			}
+				
+			if (caches[i].writePolicyHit.toLowerCase().equals("writeBack")) {
+				cycles += caches[i].cycles;
+				break;
+			}
+			else {
+				cycles += caches[i].cycles;
+			}
+		}
+	return cycles;
+	}
+	
+	public  String read_instruction(String address) {
 		// Takes a binary address and returns corresponding value of address
 		Block to_be_cached;
 		int k;
@@ -124,11 +144,11 @@ public class MemoryHierarchy {
 				}
 			}
 		}
-		return 0;
+		return null;
 	}
 
 
-	public  int read_data(String address) {
+	public  String read_data(String address) {
 		// Takes a binary address and returns corresponding value of address
 		Block to_be_cached;
 		for (int i = 1; i <= this.caches.length; i++) {
@@ -152,7 +172,7 @@ public class MemoryHierarchy {
 				} 
 			}
 		}
-		return 0;
+		return null;
 	}
 	
 	public Block read_from_lower_level(int i, String address, boolean instructionOrNot) {
@@ -257,7 +277,7 @@ public class MemoryHierarchy {
 	}
 
 	
-	public void write(String address, int data) {
+	public void write(String address, String data) {
 		if (caches[1].hitOrMiss(address)) {
 			write_to_cache(1, address, data);
 		}
@@ -267,7 +287,7 @@ public class MemoryHierarchy {
 		}
 	}
 	
-	public void write_to_cache(int cache_level, String address, int data) {
+	public void write_to_cache(int cache_level, String address, String data) {
 		// Write data in cache, and continues writing through if cache's writePolicyHit is writeThrough
 		if(cache_level == this.caches.length) {
 			int address_value = (int) Long.parseLong(address,2);

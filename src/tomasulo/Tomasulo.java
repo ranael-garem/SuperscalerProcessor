@@ -13,7 +13,7 @@ public class Tomasulo {
 	public MemoryHierarchy mem_heirarchy;
 	
 	ReservationStation [] reservation_stations;
-	public RegisterFile register_file; //TODO REGISTER 0 is Final
+	public RegisterFile register_file;
 	RegisterStatusTable register_statuses;
 	ReorderBufferTable reorder_buffer;
 	InstructionBuffer instruction_buffer;
@@ -35,6 +35,8 @@ public class Tomasulo {
 	
 	boolean low_byte_set;
 	String low_byte;
+	
+	Instruction jump_instruction;
 
 	public Tomasulo (int no_reorder_buffer_entries,
 			int instruction_buffer_entries, String[] functional_unit_info, int PC_ORG, int PC_END) {
@@ -67,7 +69,7 @@ public class Tomasulo {
 			for(int j = 0; j < FU_count; j++ ) {
 				this.reservation_stations[counter] = new ReservationStation(type+(j+1), cycles);
 				
-				if(type.toLowerCase().equals("add")) {
+				if(type.toLowerCase().equals("add") ) {
 					this.reservation_stations[counter].FU = new AddFunctinalUnit(cycles); //Initialize AndFU with number of cycles
 				}
 				else if(type.toLowerCase().equals("mul")) {
@@ -92,7 +94,7 @@ public class Tomasulo {
 	public void fetch() {
 
 		if(jump_stall) {
-			Instruction I = this.instruction_buffer.instruction_buffer[this.instruction_buffer.tail - 1];
+			Instruction I = this.jump_instruction;
 			if(jumpFetchCheck(I)) // Change PC to Jump address if instruction is Jump
 				return;
 			if(returnFetchCheck(I)) // Change PC to Jump address if instruction is Return
@@ -132,10 +134,7 @@ public class Tomasulo {
 			address = "0" + address;
 		if(!low_byte_set) {
 			if(mem_heirarchy.done_fetching(address)) {
-				System.out.println("ay 7aga");
-				low_byte = Integer.toBinaryString(mem_heirarchy.read_instruction(address));	
-				while(low_byte.length() < 8)
-					low_byte = "0" + low_byte;
+				low_byte = mem_heirarchy.read_instruction(address);	
 				low_byte_set = true;
 			}
 			return null;
@@ -145,9 +144,7 @@ public class Tomasulo {
 			while(address.length() < 16)
 				address = "0" + address;
 			if(mem_heirarchy.done_fetching(address)) {
-				high_byte = Integer.toBinaryString(mem_heirarchy.read_instruction(address));	
-				while(high_byte.length() < 8)
-					high_byte = "0" + high_byte;
+				high_byte = mem_heirarchy.read_instruction(address);	
 			}
 			else {
 				return null;
@@ -182,7 +179,7 @@ public class Tomasulo {
 				else { this.jump_stall = true;}
 			}
 			else {
-				PC = this.register_file.registers[I.rs];
+				PC = convertToDecimal(this.register_file.registers[I.rs]);
 				this.jump_stall = false;
 			}
 			return true;
@@ -192,6 +189,7 @@ public class Tomasulo {
 
 	public boolean jumpFetchCheck(Instruction I) {
 		if(I.type.toLowerCase().equals("jump")) {
+			this.jump_instruction = I;
 			int b = this.register_statuses.ROBTag[I.rs];
 			if(b != -1) {
 				if(this.reorder_buffer.entries[b].ready) {
@@ -201,11 +199,12 @@ public class Tomasulo {
 				else { this.jump_stall = true;}
 			}
 			else {
-				System.out.println("IMM" + I.imm);
 
-				PC = PC + 2 + this.register_file.registers[I.rs] + I.imm;
+				PC = PC + 2 + convertToDecimal(this.register_file.registers[I.rs]) + I.imm;
+				System.out.println("IMMEDIATE: " + I.imm);
 				this.jump_stall = false;
 			}
+			System.out.println("PC: " + PC);
 			return true;
 		}
 		return false; //Instruction is not Jump
@@ -222,7 +221,7 @@ public class Tomasulo {
 				else { this.jump_stall = true;}
 			}
 			else {
-				PC = this.register_file.registers[I.rs];
+				PC = convertToDecimal(this.register_file.registers[I.rs]);
 				this.jump_stall = false;
 			}
 			return true;
@@ -293,11 +292,12 @@ public class Tomasulo {
 					this.reorder_buffer.addToBuffer(reorder_entry);
 					this.register_statuses.ROBTag[i.rd] = b;
 				}
+				if(RS.Qj == -1 && RS.Qk == -1)
+					RS.start_execute = true;
 				}
 		}
 	
 	public void checkRegisterReadyRs(Instruction i, ReservationStation r) {
-		System.out.println(i.rs);
 		if(this.register_statuses.ROBTag[i.rs] != -1) {
 			int ROBindex = this.register_statuses.ROBTag[i.rs];
 			if(this.reorder_buffer.entries[ROBindex].ready) {
@@ -308,7 +308,7 @@ public class Tomasulo {
 			} 
 		}
 		else {
-			r.Vj = this.register_file.registers[i.rs];
+			r.Vj = convertToDecimal(this.register_file.registers[i.rs]);
 			r.Qj = -1;
 		}
 	}
@@ -329,14 +329,14 @@ public class Tomasulo {
 			} 
 		}
 		else {
-			r.Vk = this.register_file.registers[i.rt];
+			r.Vk = convertToDecimal(this.register_file.registers[i.rt]);
 			r.Qk = -1;
 		}
 	}
 	
 	public  int checkAvailableRS(Instruction i) {
 		String type = "";
-		if(i.type.equals("add") || i.type.equals("nand") || i.type.equals("subtract")) {
+		if(i.type.equals("add") || i.type.equals("nand") || i.type.equals("subtract") || i.type.equals("branch")  || i.type.equals("addi")) {
 			type = "add";
 		}
 		else if(i.type.equals("multiply")) {
@@ -367,16 +367,23 @@ public class Tomasulo {
 						String address = Integer.toBinaryString(RS.A);
 						while(address.length() < 16)
 							address = "0" + address;
+						String address1 = Integer.toBinaryString(RS.A + 1);
+						while (address1.length() < 16)
+							address1 = "0" + address1;
 						if(RS.calculated_address && storeCheck(RS.A)) {
-							System.out.println("EXEC" + RS.exec_cycles_left);
-							if(RS.exec_cycles_left == 0) {
-								RS.result = mem_heirarchy.read_data(address);
-								System.out.println("RESULT: " +  RS.result);
+							RS.exec_cycles_left--;
+							if(RS.exec_cycles_left == 0 && !RS.lowByteSet) {
+								RS.lowByte = mem_heirarchy.read_data(address);
+								RS.exec_cycles_left = this.mem_heirarchy.load_cycles_left(address1);
+								RS.lowByteSet = true;
 							}
-							else {
-								RS.exec_cycles_left--;
+							else if(RS.exec_cycles_left == 0 && RS.lowByteSet) {
+								RS.lowByteSet = false;
+								RS.result = convertToDecimal(this.mem_heirarchy.read_data(address1) + RS.lowByte);
 							}
-						} else {
+						}
+						else {
+
 						RS.A = RS.FU.execute("calculate_addr", RS.Vj, RS.A);
 						RS.calculated_address = true;
 						RS.exec_cycles_left = this.mem_heirarchy.load_cycles_left(address);
@@ -384,9 +391,11 @@ public class Tomasulo {
 					}
 				}
 				else if(RS.op.toLowerCase().equals("store")) {
-					if(RS.Qj == -1) {
+					if(RS.Qj == -1 && !RS.start_store) {
 						this.reorder_buffer.entries[RS.dest].Dest = RS.Vj + RS.A;
-						RS.exec_cycles_left = 0;
+						String address = Integer.toBinaryString(RS.Vj + RS.A);
+						RS.store_cycles_left = mem_heirarchy.store_cycles_left(address);
+						RS.start_store = true;
 					}
 				}
 				else if(RS.op.toLowerCase().equals("jalr")) {
@@ -395,25 +404,25 @@ public class Tomasulo {
 				}
 				else { //Arithmetic Operations and Branch
 				if(RS.start_execute) {
+					if(RS.exec_cycles_left > 0)
+						RS.exec_cycles_left--;
 					if(RS.exec_cycles_left == 0) {
 						RS.result = RS.FU.execute(RS.op, RS.Vj, RS.Vk);
 						if(RS.op.toLowerCase().equals("branch")) {
 							if(RS.result == 1 && (RS.A < 0)) // 2 operands are equal, and Branch was taken
 								RS.result = 1; // Correct Prediction
-							if(RS.result == 1 && (RS.A >= 0)) { // 2 operands are equal, and Branch was not taken
+							else if(RS.result == 1 && (RS.A >= 0)) { // 2 operands are equal, and Branch was not taken
 								RS.result = 0; // mispredictions
 								this.mispredictions++;
 							}
-							if(RS.result == 0 && (RS.A < 0)) { // 2 operands are not equal and Branch was taken
+							else if(RS.result == 0 && (RS.A < 0)) { // 2 operands are not equal and Branch was taken
 								RS.result = 0;
 								this.mispredictions++;
 							}
-							if(RS.result == 0 && (RS.A >= 0))  // 2 operands are not equal and branch was not taken
+							else if(RS.result == 0 && (RS.A >= 0))  // 2 operands are not equal and branch was not taken
 								RS.result = 1; // Correct Prediction
+							System.out.println("BRANCH RESULT: " + RS.result);
 						}
-
-					}else {
-						RS.exec_cycles_left--;
 					}
 				}
 				else if (RS.Qj == -1 && RS.Qk == -1) {
@@ -424,6 +433,7 @@ public class Tomasulo {
 	}
 	}
 	
+
 	public boolean storeCheck(int Address) {
 		//Checks that all stores have a different memory address, then the Load mem address
 		for(int i = 0; i < this.reorder_buffer.entries.length; i++) {
@@ -439,26 +449,41 @@ public class Tomasulo {
 			ReservationStation RS = this.reservation_stations[RS_indices.get(i)];
 			if(RS.op.toLowerCase().equals("store")) {
 				if(RS.Qk == -1) {
-					int b = RS.dest;
-					this.reorder_buffer.entries[b].value = RS.Vk;
-					this.reorder_buffer.entries[b].ready = true;
+					if(RS.start_store) {
+						RS.store_cycles_left--;
+						if(RS.store_cycles_left == 0 && !RS.lowByteSet) {
+							RS.lowByteSet = true;
+							String address1 = Integer.toBinaryString(RS.A + 1);
+							while(address1.length() < 16)
+								address1 = "0" + address1;
+							RS.store_cycles_left = this.mem_heirarchy.store_cycles_left(address1);
+							storeLowByte(RS.Vk, RS.A);
+							return;
+						}
+						else if(RS.store_cycles_left == 0 && RS.lowByteSet) {
+							RS.lowByteSet = false;
+							storeHighByte(RS.Vk, (RS.A + 1));
+							int b = RS.dest;
+							this.reorder_buffer.entries[b].value = RS.Vk;
+							this.reorder_buffer.entries[b].ready = true;
+							
+							RS.busy = false;
+							RS.exec_cycles_left = RS.cycles;
+							RS.start_store = false;
+							RS.op = "";
+							RS.Qj = -1;
+							RS.Qk = -1;
+											
+							RS_indices.remove(i);
+							return;
+						}
+						return;
+					}
 
-					RS.busy = false;
-					RS.exec_cycles_left = RS.cycles;
-					RS.start_execute = false;
-					RS.op = "";
-					RS.Qj = -1;
-					RS.Qk = -1;
-									
-					this.reorder_buffer.entries[b].ready = true;
-					this.reorder_buffer.entries[b].value = RS.result;
-					RS_indices.remove(i);
-					return;
 				}
 			}
 			// All instructions but Store
 			if(RS.exec_cycles_left == 0) {
-				System.out.println("WRITE" + RS.exec_cycles_left);
 				int b = RS.dest;
 				RS.busy = false;
 				RS.exec_cycles_left = RS.cycles;
@@ -488,7 +513,24 @@ public class Tomasulo {
 		}
 	}
 	
-	//TODO BRANCH
+	private void storeLowByte(int vk, int A) {
+		String address = Integer.toBinaryString(A);
+		while (address.length() < 16)
+			address = "0" + address;
+		
+		String value = convertToBinary(vk);
+		this.mem_heirarchy.write(address, value.substring(8));
+	}
+	
+	private void storeHighByte(int vk, int A) {
+		String address = Integer.toBinaryString(A);
+		while (address.length() < 16)
+			address = "0" + address;
+		
+		String value = convertToBinary(vk);
+		this.mem_heirarchy.write(address, value.substring(0,8));
+	}
+
 	public void commit() {
 		ReorderBufferEntry ROB_entry = this.reorder_buffer.getROB();
 		if(ROB_entry == null)
@@ -497,9 +539,7 @@ public class Tomasulo {
 		int d = ROB_entry.Dest; //Reg or Mem Address if store
 		if(ROB_entry.ready) {
 			if(ROB_entry.type.toLowerCase().equals("store")) {
-				//Write in memory
-				//TODO increment instruction only when no stall from writing
-				//TODO Remove from ROB
+				this.reorder_buffer.removeFromBuffer();
 				instructions_completed++;
 				return;
 			}
@@ -511,7 +551,6 @@ public class Tomasulo {
 			if(ROB_entry.type.toLowerCase().equals("branch")) {
 				if(ROB_entry.value == 1) { // Branch was predicted correctly
 					this.reorder_buffer.removeFromBuffer();
-					instructions_completed++;
 					return;
 				} else {
 					this.PC = ROB_entry.PC_value;
@@ -519,9 +558,11 @@ public class Tomasulo {
 					this.register_statuses.flush();
 					flushRss();
 				}
+				this.branches++;
+				instructions_completed++;
 				return;
 			}
-			this.register_file.registers[d] = ROB_entry.value;
+			this.register_file.registers[d] = convertToBinary(ROB_entry.value);
 			this.register_statuses.ROBTag[d] = -1; 
 			this.reorder_buffer.removeFromBuffer();
 			instructions_completed++;
@@ -538,9 +579,13 @@ public class Tomasulo {
 	public void Simulation() {
 		//TODO Removed memory_stall
 		this.cycles = 1;
-//		while(! (this.cycles > 1 && this.reorder_buffer.isEmpty() && this.instruction_buffer.isEmpty())  ) {
+		while(! (this.cycles > 1 
+				&& this.reorder_buffer.isEmpty() 
+				&& this.instruction_buffer.isEmpty()
+				&& PC == PC_END
+				)) {
 //		while(!this.instruction_buffer.isEmpty()) {
-		while(cycles < 40) {
+//		while(cycles < 70) {
 			commit();
 			
 			write();
@@ -555,12 +600,12 @@ public class Tomasulo {
 			System.out.println("---------------------");
 			print();
 			cycles++;
-
-
 		}
 	}
 	
 	public void print() {
+		System.out.println("Instrcutions Completed: " + instructions_completed);
+		System.out.println("---------------------");
 		this.instruction_buffer.printInstructionBuffer();
 		System.out.println("---------------------");
 		this.reorder_buffer.printROB();
@@ -571,8 +616,8 @@ public class Tomasulo {
 		System.out.println("---------------------");
 		this.register_file.printRegisterFile();
 		System.out.println("---------------------");
-
 	}
+	
 	public void printRSs() {
 		System.out.println("Reservation Stations");
 		for (int i = 0; i < this.reservation_stations.length; i++) {
@@ -585,8 +630,73 @@ public class Tomasulo {
 	public int getCycles() {
 		return cycles;
 	}
+	
 	public int getNumberOfInstructions() {
 		return instructions_completed;
 	}
+	
+	public static int convertToDecimal(String number) {		
+		String result;
+		long x;
+		
+		if (isNegative(number)) {
+			result = twosComplementConverter(number);
+			x = Long.parseLong(result, 2);
+			x = (x * -1);
+		} 
+		else {
+			x = Long.parseLong(number, 2);
+		}
+		
+		return (int) x;
+	}
+	
+	public static boolean isNegative(String number) {
+		if (number.charAt(0) == '1') {
+			return true;
+		}
+		else {
+			 return false;
+		}
+	}
+	
+	public static String twosComplementConverter (String number) {
+		String result ="";
+		boolean flagOne = false;
+		for(int i = number.length() -1 ; i >= 0; i--) {
+			if (!flagOne) { // didn't find 1
+			if (number.charAt(i) == '1' ) {
+				flagOne = true;
+				result= "1" + result;
+			}
+			else if (number.charAt(i) == '0') {
+				result= "0" + result;
+			}
+			} else { // found 1 so we start flipping
+				if (number.charAt(i) == '1' ) {
+					result= "0" + result;
+				}
+				else if (number.charAt(i) == '0') {
+					result= "1" + result;
+				}
+			}
+		}
+		//System.out.println(result);
+		return result;
+	}
+	
+	public String convertToBinary(int x) {
+		String temp = Integer.toBinaryString(x);
+		if (x >= 0) {
+			while(temp.length() < 16)
+				temp = "0" + temp;
+		}
+		else {
+			temp = temp.substring(16);
+		}
+		return temp;
+	}
+	
+    
 
 }

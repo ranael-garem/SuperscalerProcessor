@@ -5,10 +5,10 @@ public class Block {
 	public String tag;
 	public int validBit;
 	int dirtyBit;
-	public int [] bytes;
+	public String [] bytes;
 
 	public Block(int blockSize) {
-		this.bytes = new int[blockSize];
+		this.bytes = new String[blockSize];
         this.validBit = 0;
 
 	}

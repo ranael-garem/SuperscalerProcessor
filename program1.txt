@@ -20,11 +20,13 @@ LWRS:1
 LWCycles:10
 AssemblyProgram
 .org 100
-ADDI reg2,reg1,5
-ADD reg4,reg2,reg2
+LW reg1,reg2,50
+JMP reg1, 0
+ADD reg2,reg1,reg3
+MUL reg4,reg1,reg1
 endofAssembly
 ProgramData
-50;7
+50;2
 410;54
 501;44
 endofData

@@ -63,7 +63,7 @@ public class Instruction {
 		this.rs = (int) Long.parseLong(instruction.substring(3, 6), 2);
 		this.rd = -1;
 		this.rt = -1;
-		String imm = instruction.substring(6,13);
+		String imm = instruction.substring(9);
 		this.imm = convertToDecimal(imm);
 	}
 	
@@ -113,9 +113,7 @@ public class Instruction {
 		this.rs = (int) Long.parseLong(instruction.substring(6, 9), 2);
 		this.rt = -1;
 		String imm = instruction.substring(9);
-		System.out.println("IMMEDIATE" + imm);
 
-		System.out.println("IMMEDIATE" + imm);
 		this.imm = convertToDecimal(imm);
 
 	}

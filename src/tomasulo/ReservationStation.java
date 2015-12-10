@@ -23,7 +23,13 @@ public class ReservationStation {
 	int result;
 	
 	FunctionalUnit FU;
+	
+	String lowByte;
+	boolean lowByteSet;
+	int store_cycles_left;
+	boolean start_store;
 
+	
 	public ReservationStation(String name, int cycles) {
 		this.name = name;
 		this.busy = false;

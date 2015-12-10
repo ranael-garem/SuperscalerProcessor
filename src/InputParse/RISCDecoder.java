@@ -57,7 +57,8 @@ public class RISCDecoder {
 			res+= RISCDecoder.register(x.substring(5, 9));
 			res+= RISCDecoder.register(x.substring(10, 14));
 			if(Integer.parseInt(x.substring(15)) < 0) {
-				res+= Integer.toBinaryString(Integer.parseInt(x.substring(15))).substring(25);}
+				res+= Integer.toBinaryString(Integer.parseInt(x.substring(15))).substring(25);
+				}
 			else {
 				for(int i = Integer.toBinaryString(Integer.parseInt(x.substring(15))).length();
 						i < 7; i++){
@@ -103,7 +104,8 @@ public class RISCDecoder {
 			res+="011";
 			res+= RISCDecoder.register(x.substring(4, 8));
 			if(Integer.parseInt(x.substring(10)) < 0) {
-				res+= Integer.toBinaryString(Integer.parseInt(x.substring(10))).substring(22);}
+				res+= "000";
+				res+= Integer.toBinaryString(Integer.parseInt(x.substring(10))).substring(25);}
 			else {
 				for(int i = Integer.toBinaryString(Integer.parseInt(x.substring(10))).length();
 						i < 7; i++){
@@ -148,22 +150,22 @@ public class RISCDecoder {
 		}
 	}
 	
-	public static void main(String[] args) {
-		String res ="";
-	
-		res+="011";
-		res+= RISCDecoder.register("reg1");
-		if(Integer.parseInt("-1") < 0) {
-			res+= Integer.toBinaryString(Integer.parseInt("-1")).substring(22);}
-		else {
-			for(int i = Integer.toBinaryString(Integer.parseInt("-1")).length();
-					i < 7; i++){
-				res += "0";
-			}
-			res+= Integer.toBinaryString(Integer.parseInt("-1"));
-		}
-		
-		System.out.println(res);
-	}
+//	public static void main(String[] args) {
+//		String res ="";
+//	
+//		res+="011";
+//		res+= RISCDecoder.register("reg1");
+//		if(Integer.parseInt("-1") < 0) {
+//			res+= Integer.toBinaryString(Integer.parseInt("-1")).substring(22);}
+//		else {
+//			for(int i = Integer.toBinaryString(Integer.parseInt("-1")).length();
+//					i < 7; i++){
+//				res += "0";
+//			}
+//			res+= Integer.toBinaryString(Integer.parseInt("-1"));
+//		}
+//		
+//		System.out.println(res);
+//	}
 }
 
