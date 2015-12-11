@@ -13,7 +13,7 @@ public class BufferedReaderExample {
 
 			String sCurrentLine;
 
-			br = new BufferedReader(new FileReader("program2.txt"));
+			br = new BufferedReader(new FileReader("program3.txt"));
 
 			while ((sCurrentLine = br.readLine()) != null) {
 				content.add(sCurrentLine);

@@ -2,6 +2,7 @@ package tomasulo;
 
 import java.util.ArrayList;
 
+import memoryHierarchy.Cache;
 import memoryHierarchy.MemoryHierarchy;
 
 import functionalUnits.AddFunctinalUnit;
@@ -17,6 +18,7 @@ public class Tomasulo {
 	RegisterStatusTable register_statuses;
 	ReorderBufferTable reorder_buffer;
 	InstructionBuffer instruction_buffer;
+	public int way; //Number of instructions issued simultaneously
 	
 	boolean CDB_available; //Common Data Bus
 
@@ -24,7 +26,7 @@ public class Tomasulo {
 	int instructions_completed; //Number of instructions completed
 	int PC; // PC register pointing to the instruction to be fetched
 	int PC_END; //Address of PC where program ends
-	
+	int instructions_executed; // Number of instructions executed
 	ArrayList<Integer> RS_indices; // Indices of RSs in the order they were issued 
 	
 	int branches;
@@ -33,18 +35,19 @@ public class Tomasulo {
 	boolean memory_stall;
 	boolean jump_stall;
 	
-	boolean low_byte_set;
-	String low_byte;
+	boolean low_byte_set; // for fetch
+	String low_byte; // for fetch
 	
-	Instruction jump_instruction;
+	Instruction jump_instruction; // save the jump instruction to be able to get it after stalling
 
 	public Tomasulo (int no_reorder_buffer_entries,
-			int instruction_buffer_entries, String[] functional_unit_info, int PC_ORG, int PC_END) {
+			int instruction_buffer_entries, String[] functional_unit_info, int PC_ORG, int PC_END, int way) {
 
 		this.register_file = new RegisterFile();
 		this.register_statuses = new RegisterStatusTable();
 		this.reorder_buffer = new ReorderBufferTable(no_reorder_buffer_entries);
 		this.instruction_buffer = new InstructionBuffer(instruction_buffer_entries);
+		this.way = way;
 		
 		int no_reservation_stations = 0;
 		//User enters array of Strings with specification of each functional unit
@@ -133,22 +136,21 @@ public class Tomasulo {
 		while(address.length() < 16)
 			address = "0" + address;
 		if(!low_byte_set) {
-			if(mem_heirarchy.done_fetching(address)) {
-				low_byte = mem_heirarchy.read_instruction(address);	
-				low_byte_set = true;
-			}
+				low_byte = mem_heirarchy.temp(address);
+				if(low_byte != null)
+					low_byte_set = true;
+				
 			return null;
 		}
 		else {
 			address = Integer.toBinaryString(PC + 1);
 			while(address.length() < 16)
 				address = "0" + address;
-			if(mem_heirarchy.done_fetching(address)) {
-				high_byte = mem_heirarchy.read_instruction(address);	
-			}
-			else {
+
+			high_byte = mem_heirarchy.temp(address);	
+			if(high_byte == null)
 				return null;
-			}
+		
 		}
 		
 		String result = high_byte + low_byte;
@@ -231,71 +233,80 @@ public class Tomasulo {
 
 	public void issue() {
 		
-		if(this.instruction_buffer.getInstruction() == null) {
-			return; //No instruction available in the Instruction Buffer
-		}
-
-		Instruction i = this.instruction_buffer.getInstruction();
+		for(int j = 0; j < this.way; j++) {
+			if(this.instruction_buffer.getInstruction() == null) {
+				return; //No instruction available in the Instruction Buffer
+			}
+			Instruction i = this.instruction_buffer.getInstruction();
 			if(i.type.toLowerCase().equals("jump") || i.type.toLowerCase().equals("return")) {
 				if(this.reorder_buffer.entries[reorder_buffer.tail] == null) {	//Check for available ROB only
 					ReorderBufferEntry reorder_entry = new ReorderBufferEntry(i.type, -1, true);
 					this.reorder_buffer.addToBuffer(reorder_entry);
 					this.instruction_buffer.removeFromBuffer();
+				}else {
+					return; // No Available ROB so CANT issue
 				}
-				return;
-			}
-			// Check for available RS and ROB entry
-			if((this.checkAvailableRS(i) == -1) || this.reorder_buffer.entries[reorder_buffer.tail] != null) {
-				return; // No RS or ROB slot available for Instruction,	Then Stall			
 			}
 			else {
-				this.instruction_buffer.removeFromBuffer();
-				ReservationStation RS = this.reservation_stations[this.checkAvailableRS(i)];
-				RS_indices.add(this.checkAvailableRS(i)); // Add index of RS in ArrayList
-				int b = reorder_buffer.tail; 
-				RS.busy = true;
-				RS.op = i.type;
-				if(i.type.toLowerCase().equals("jalr")) {
-					RS.dest = b;
-					ReorderBufferEntry reorder_entry= new ReorderBufferEntry(i.type, i.rd, false);
-					this.reorder_buffer.addToBuffer(reorder_entry);
-					this.register_statuses.ROBTag[i.rd] = b;
-					return;
+				// Check for available RS and ROB entry
+				if((this.checkAvailableRS(i) == -1) || this.reorder_buffer.entries[reorder_buffer.tail] != null) {
+					return; // No RS or ROB slot available for Instruction,	Then Stall			
 				}
-				checkRegisterReadyRs(i, RS);
-				if(i.type.toLowerCase().equals("load")) {
-					RS.A = i.imm;
-					this.register_statuses.ROBTag[i.rd] = b;
-					RS.dest = b;
-					ReorderBufferEntry reorder_entry= new ReorderBufferEntry(i.type, i.rd, false);
-					this.reorder_buffer.addToBuffer(reorder_entry);
-				}
-				else if(i.type.toLowerCase().equals("store")) {
-					checkRegisterReadyRt(i, RS);
-					RS.dest = b;
-					RS.A = i.imm;
-					ReorderBufferEntry reorder_entry= new ReorderBufferEntry(i.type, -1 , false);
-					this.reorder_buffer.addToBuffer(reorder_entry);
+				else {
+					this.instruction_buffer.removeFromBuffer();
+					ReservationStation RS = this.reservation_stations[this.checkAvailableRS(i)];
+					RS_indices.add(this.checkAvailableRS(i)); // Add index of RS in ArrayList
+					int b = reorder_buffer.tail; 
+					RS.busy = true;
+					RS.op = i.type;
+					if(i.type.toLowerCase().equals("jalr")) {
+						RS.dest = b;
+						RS.Vk = i.rt; // The value of PC+2 which is saved when fetching
+						ReorderBufferEntry reorder_entry= new ReorderBufferEntry(i.type, i.rd, false);
+						this.reorder_buffer.addToBuffer(reorder_entry);
+						this.register_statuses.ROBTag[i.rd] = b;
+					}
+					else {
+						checkRegisterReadyRs(i, RS);
+						if(i.type.toLowerCase().equals("load")) {
+							RS.A = i.imm;
+							this.register_statuses.ROBTag[i.rd] = b;
+							RS.dest = b;
+							ReorderBufferEntry reorder_entry= new ReorderBufferEntry(i.type, i.rd, false);
+							this.reorder_buffer.addToBuffer(reorder_entry);
+						}
+						else if(i.type.toLowerCase().equals("store")) {
+							checkRegisterReadyRt(i, RS);
+							RS.dest = b;
+							RS.A = i.imm;
+							ReorderBufferEntry reorder_entry= new ReorderBufferEntry(i.type, -1 , false);
+							this.reorder_buffer.addToBuffer(reorder_entry);
 
-				} else if(i.type.toLowerCase().equals("branch")) {
-					checkRegisterReadyRt(i, RS);
-					RS.dest = b;
-					RS.A = i.imm;
-					ReorderBufferEntry reorder_entry= new ReorderBufferEntry(i.type, -1, false);
-					reorder_entry.PC_value = i.PC_value;
-					this.reorder_buffer.addToBuffer(reorder_entry);
-				}
-				else { //Arithmetic Operations 
-					checkRegisterReadyRt(i, RS);
-					RS.dest = b;
-					ReorderBufferEntry reorder_entry= new ReorderBufferEntry(i.type, i.rd, false);
-					this.reorder_buffer.addToBuffer(reorder_entry);
-					this.register_statuses.ROBTag[i.rd] = b;
-				}
-				if(RS.Qj == -1 && RS.Qk == -1)
-					RS.start_execute = true;
-				}
+						} else if(i.type.toLowerCase().equals("branch")) {
+							checkRegisterReadyRt(i, RS);
+							RS.dest = b;
+							RS.A = i.imm;
+							ReorderBufferEntry reorder_entry= new ReorderBufferEntry(i.type, -1, false);
+							reorder_entry.PC_value = i.PC_value;
+							this.reorder_buffer.addToBuffer(reorder_entry);
+						}
+						else { //Arithmetic Operations 
+							checkRegisterReadyRt(i, RS);
+							RS.dest = b;
+							ReorderBufferEntry reorder_entry= new ReorderBufferEntry(i.type, i.rd, false);
+							this.reorder_buffer.addToBuffer(reorder_entry);
+							this.register_statuses.ROBTag[i.rd] = b;
+						}
+						if(RS.Qj == -1 && RS.Qk == -1)
+							RS.start_execute = true;
+						}
+					}
+
+			}
+			
 		}
+
+	}
 	
 	public void checkRegisterReadyRs(Instruction i, ReservationStation r) {
 		if(this.register_statuses.ROBTag[i.rs] != -1) {
@@ -370,23 +381,54 @@ public class Tomasulo {
 						String address1 = Integer.toBinaryString(RS.A + 1);
 						while (address1.length() < 16)
 							address1 = "0" + address1;
+						
+						if(RS.lowByteSet)
+							address = address1;
+						
 						if(RS.calculated_address && storeCheck(RS.A)) {
-							RS.exec_cycles_left--;
-							if(RS.exec_cycles_left == 0 && !RS.lowByteSet) {
-								RS.lowByte = mem_heirarchy.read_data(address);
-								RS.exec_cycles_left = this.mem_heirarchy.load_cycles_left(address1);
-								RS.lowByteSet = true;
+							if(RS.cache_level == this.mem_heirarchy.caches.length) { // memory
+								if(!this.mem_heirarchy.memory.being_accessed || RS.accessed_cache) {
+									RS.accessed_cache = true;
+									if(this.mem_heirarchy.cacheCyclesLeft(RS.cache_level, address) == 0) {
+										RS.cache_level--;
+										RS.accessed_cache = false;
+									}
+								}
 							}
-							else if(RS.exec_cycles_left == 0 && RS.lowByteSet) {
-								RS.lowByteSet = false;
-								RS.result = convertToDecimal(this.mem_heirarchy.read_data(address1) + RS.lowByte);
+							else if(!this.mem_heirarchy.caches[RS.cache_level].being_accessed || RS.accessed_cache) {
+								RS.accessed_cache = true;
+								if(RS.cache_level == 1) {
+									String Byte = this.mem_heirarchy.loadValue(address);
+									if(Byte != null) {
+										RS.accessed_cache = false;
+										if(!RS.lowByteSet) {
+											RS.lowByte = Byte;
+											RS.lowByteSet = true;
+											RS.cache_level = this.mem_heirarchy.loadCacheLevel(address1);
+											System.out.println("Cache Level: " + RS.cache_level);
+										}else {
+											String result = Byte + RS.lowByte;
+											RS.result = convertToDecimal(result);
+											RS.calculated_address = false;
+											instructions_executed++;
+											RS.lowByte = null;
+											RS.lowByteSet = false;
+											RS.exec_cycles_left = 0;
+										}
+									}
+								}
+								else if(this.mem_heirarchy.cacheCyclesLeft(RS.cache_level, address) == 0) {
+									RS.cache_level--;
+									RS.accessed_cache = false;
+								}
 							}
 						}
 						else {
+							RS.A = RS.FU.execute("calculate_addr", RS.Vj, RS.A);
+							RS.calculated_address = true;
+							RS.cache_level = this.mem_heirarchy.loadCacheLevel(address);
+							System.out.println("Cache Level WHEN ADDRESS: " + RS.cache_level);
 
-						RS.A = RS.FU.execute("calculate_addr", RS.Vj, RS.A);
-						RS.calculated_address = true;
-						RS.exec_cycles_left = this.mem_heirarchy.load_cycles_left(address);
 						}
 					}
 				}
@@ -394,13 +436,17 @@ public class Tomasulo {
 					if(RS.Qj == -1 && !RS.start_store) {
 						this.reorder_buffer.entries[RS.dest].Dest = RS.Vj + RS.A;
 						String address = Integer.toBinaryString(RS.Vj + RS.A);
+						while (address.length() < 16)
+							address = "0" + address;
 						RS.store_cycles_left = mem_heirarchy.store_cycles_left(address);
 						RS.start_store = true;
+						instructions_executed++;
 					}
 				}
 				else if(RS.op.toLowerCase().equals("jalr")) {
 					RS.result = RS.Vk;
 					RS.exec_cycles_left = 0;
+					instructions_executed++;
 				}
 				else { //Arithmetic Operations and Branch
 				if(RS.start_execute) {
@@ -408,6 +454,7 @@ public class Tomasulo {
 						RS.exec_cycles_left--;
 					if(RS.exec_cycles_left == 0) {
 						RS.result = RS.FU.execute(RS.op, RS.Vj, RS.Vk);
+						instructions_executed++;
 						if(RS.op.toLowerCase().equals("branch")) {
 							if(RS.result == 1 && (RS.A < 0)) // 2 operands are equal, and Branch was taken
 								RS.result = 1; // Correct Prediction
@@ -421,7 +468,6 @@ public class Tomasulo {
 							}
 							else if(RS.result == 0 && (RS.A >= 0))  // 2 operands are not equal and branch was not taken
 								RS.result = 1; // Correct Prediction
-							System.out.println("BRANCH RESULT: " + RS.result);
 						}
 					}
 				}
@@ -433,7 +479,6 @@ public class Tomasulo {
 	}
 	}
 	
-
 	public boolean storeCheck(int Address) {
 		//Checks that all stores have a different memory address, then the Load mem address
 		for(int i = 0; i < this.reorder_buffer.entries.length; i++) {
@@ -445,6 +490,7 @@ public class Tomasulo {
 	}
 	
 	public void write() {
+		int writes = 0; // Number of instruction that can be written
 		for(int i = 0; i < this.RS_indices.size(); i++ ) {
 			ReservationStation RS = this.reservation_stations[RS_indices.get(i)];
 			if(RS.op.toLowerCase().equals("store")) {
@@ -458,7 +504,6 @@ public class Tomasulo {
 								address1 = "0" + address1;
 							RS.store_cycles_left = this.mem_heirarchy.store_cycles_left(address1);
 							storeLowByte(RS.Vk, RS.A);
-							return;
 						}
 						else if(RS.store_cycles_left == 0 && RS.lowByteSet) {
 							RS.lowByteSet = false;
@@ -475,15 +520,18 @@ public class Tomasulo {
 							RS.Qk = -1;
 											
 							RS_indices.remove(i);
-							return;
+							writes++;
+							if(writes == this.way)
+								return;
+							else
+								i--;
 						}
-						return;
 					}
 
 				}
 			}
 			// All instructions but Store
-			if(RS.exec_cycles_left == 0) {
+			else if(RS.exec_cycles_left == 0) {
 				int b = RS.dest;
 				RS.busy = false;
 				RS.exec_cycles_left = RS.cycles;
@@ -508,7 +556,11 @@ public class Tomasulo {
 					}
 				}
 				RS_indices.remove(i);
-				return;
+				writes++;
+				if(writes == this.way)
+					return;
+				else
+					i--;
 			}
 		}
 	}
@@ -532,40 +584,46 @@ public class Tomasulo {
 	}
 
 	public void commit() {
-		ReorderBufferEntry ROB_entry = this.reorder_buffer.getROB();
-		if(ROB_entry == null)
-			return;
-		
-		int d = ROB_entry.Dest; //Reg or Mem Address if store
-		if(ROB_entry.ready) {
-			if(ROB_entry.type.toLowerCase().equals("store")) {
-				this.reorder_buffer.removeFromBuffer();
-				instructions_completed++;
+		for(int i = 0; i < this.way; i++) {
+			ReorderBufferEntry ROB_entry = this.reorder_buffer.getROB();
+			if(ROB_entry == null)
 				return;
-			}
-			if(ROB_entry.type.toLowerCase().equals("jump") || ROB_entry.type.toLowerCase().equals("return")) {
-				this.reorder_buffer.removeFromBuffer();
-				instructions_completed++;
-				return;
-			}
-			if(ROB_entry.type.toLowerCase().equals("branch")) {
-				if(ROB_entry.value == 1) { // Branch was predicted correctly
+			
+			int d = ROB_entry.Dest; //Reg or Mem Address if store
+			if(ROB_entry.ready) {
+				if(ROB_entry.type.toLowerCase().equals("store")) {
 					this.reorder_buffer.removeFromBuffer();
-					return;
-				} else {
-					this.PC = ROB_entry.PC_value;
-					this.reorder_buffer.flush();
-					this.register_statuses.flush();
-					flushRss();
+					instructions_completed++;
 				}
-				this.branches++;
-				instructions_completed++;
-				return;
+				else if(ROB_entry.type.toLowerCase().equals("jump") || ROB_entry.type.toLowerCase().equals("return")) {
+					this.reorder_buffer.removeFromBuffer();
+					instructions_completed++;
+				}
+				else if(ROB_entry.type.toLowerCase().equals("branch")) {
+					this.branches++;
+					instructions_completed++;
+					if(ROB_entry.value == 1) { // Branch was predicted correctly
+						this.reorder_buffer.removeFromBuffer();
+
+					} else {
+						this.PC = ROB_entry.PC_value;
+						this.reorder_buffer.flush();
+						this.register_statuses.flush();
+						flushRss();
+						this.instruction_buffer.flush();
+						this.low_byte = null;
+						this.low_byte_set = false;
+						return;
+					}
+				}
+				else {
+					this.register_file.registers[d] = convertToBinary(ROB_entry.value);
+					this.register_statuses.ROBTag[d] = -1; 
+					this.reorder_buffer.removeFromBuffer();
+					instructions_completed++;
+				}
+
 			}
-			this.register_file.registers[d] = convertToBinary(ROB_entry.value);
-			this.register_statuses.ROBTag[d] = -1; 
-			this.reorder_buffer.removeFromBuffer();
-			instructions_completed++;
 		}
 	}
 	
@@ -577,15 +635,16 @@ public class Tomasulo {
 	}
 
 	public void Simulation() {
-		//TODO Removed memory_stall
-		this.cycles = 1;
+		this.cycles = 0;
 		while(! (this.cycles > 1 
 				&& this.reorder_buffer.isEmpty() 
 				&& this.instruction_buffer.isEmpty()
 				&& PC == PC_END
 				)) {
 //		while(!this.instruction_buffer.isEmpty()) {
-//		while(cycles < 70) {
+//		while(cycles < 40) {
+			cycles++;
+
 			commit();
 			
 			write();
@@ -599,12 +658,52 @@ public class Tomasulo {
 			System.out.println("Cycle:"+ cycles);
 			System.out.println("---------------------");
 			print();
-			cycles++;
+//			this.mem_heirarchy.printCacheAccesses();
 		}
+		this.mem_heirarchy.memory.print_part_memory(0,6);
+		printOutputs();
+//		this.mem_heirarchy.caches[0].printCache();
+
 	}
 	
+	private void printOutputs() {
+		System.out.println("Performance Metrics");
+		System.out.println("---------------------");
+
+		System.out.println("Total Execution Time: " + this.cycles + " cycles");
+		System.out.println("IPC: " + (double)this.instructions_completed/ (double)this.cycles);
+
+		System.out.println("Branch Misprediction Percentage: " + ((double)mispredictions/(double)branches) * 100 +"%");
+		
+		for(int i = 0; i < this.mem_heirarchy.caches.length; i++) {
+			String cacheName;
+			Cache cache = this.mem_heirarchy.caches[i];
+
+			if(i == 0)
+				cacheName = "1 (Instruction) -->";
+			else if (i == 1)
+				cacheName = "1 (Data) -->";
+			else
+				cacheName = ""+i+" -->";
+			
+			double hitRatio = (double) cache.hits /((double)cache.hits + (double) cache.misses);
+			System.out.println("Cache " + cacheName + " hit ratio: " + hitRatio);
+		}
+		System.out.println("----------------------------------------");
+
+	}
+
 	public void print() {
 		System.out.println("Instrcutions Completed: " + instructions_completed);
+		System.out.println("Instrcutions Executed: " + instructions_executed);
+		System.out.println("---------------------");
+		System.out.println("Branches Encountered: " + branches);
+		System.out.println("---------------------");
+		System.out.println("Branches Mispredictions: " + mispredictions);
+		System.out.println("---------------------");
+		System.out.println("Total Cycles spent to access Memory: " + this.mem_heirarchy.memory.total_cycles + " cycles");
+		System.out.println("---------------------");
+		this.mem_heirarchy.printCacheAccesses();
 		System.out.println("---------------------");
 		this.instruction_buffer.printInstructionBuffer();
 		System.out.println("---------------------");
@@ -615,7 +714,7 @@ public class Tomasulo {
 		this.register_statuses.printRegisterStatusTable();
 		System.out.println("---------------------");
 		this.register_file.printRegisterFile();
-		System.out.println("---------------------");
+		System.out.println("---------------------------------------------------------------------");
 	}
 	
 	public void printRSs() {

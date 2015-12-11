@@ -7,30 +7,28 @@ M:4
 writePolicyHit:writeThrough
 writePolicyMiss:writeAllocate
 cacheCycles:1
-mainMemoryCycles:2
+mainMemoryCycles:3
 HardwareOrganization
-simultaneousIssuesOfInstructions:3
+simultaneousIssuesOfInstructions:1
 sizeInstructionBuffer:10
 sizeOfROB:4
 ADDRS:2
-ADDCycles:2
+ADDCycles:1
 MULRS:2
-MULCycles:7
+MULCycles:3
 LWRS:1
 LWCycles:10
+JALRRS:2
+JALRCycles:4
 AssemblyProgram
 .org 100
-LW reg1,reg2,50
-LW reg4,reg2,52
-ADD reg2,reg2,reg1
-SUB reg4,reg4,reg1
-BEQ reg4,reg0,2
-JMP reg0, -8
-ADDI reg7,reg7,9
+ADDI reg1,reg1,2
+ADD reg0,reg0,reg0
+SW reg1,reg3,2
 endofAssembly
 ProgramData
-50;1
+50;7
 52;10
-501;44
+62;2
 endofData
 

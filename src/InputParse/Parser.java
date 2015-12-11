@@ -119,7 +119,7 @@ public class Parser {
 		int PCbegin = Integer.parseInt(input.get(pointer+1).substring(5));
 		int PCend = PCbegin+ 2*(input.indexOf("endofAssembly") - pointer - 2)-2;
 //		System.out.println("PC "+(PCend + 2));
-		t = new Tomasulo(ROBentries, instruction_buffer_entries, FUinfo, PCbegin, PCend);
+		t = new Tomasulo(ROBentries, instruction_buffer_entries, FUinfo, PCbegin, PCend, simulInstrCount);
 		t.mem_heirarchy = this.m;
 		//parseAssemblyProgram(input);
 		
@@ -159,6 +159,7 @@ public class Parser {
 				m.memory.WriteToMemory((Integer.parseInt(temp[0]) + 1), data.substring(0,8));
 				pointer++;
 			}
+
 //			System.out.println("----------------");
 //			System.out.println("Done");
 		}
@@ -179,7 +180,6 @@ public class Parser {
 	public static void main(String[] args) {
 		Parser s = new Parser();
 		s.parseAll();
-//		s.m.memory.print_part_memory(100, 101);
 		s.t.Simulation();
 		
 //		System.out.println("Total Execution Time "+ s.t.getCycles());

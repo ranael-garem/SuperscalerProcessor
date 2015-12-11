@@ -11,6 +11,7 @@ public class Instruction {
 	String status; // Fetched, Issued, Executed, Written, Committed
 	
 	int PC_value;
+	String instruction;
 
 	public Instruction(String instruction) {
 		String opcode = instruction.substring(0,3);
@@ -97,10 +98,10 @@ public class Instruction {
 	}
 	
 	private void store(String instruction) {
-		// SW rs, rt, imm
+		// SW rt, rs, imm
 		this.type = "store";
-		this.rs = (int) Long.parseLong(instruction.substring(3, 6), 2);
-		this.rt = (int) Long.parseLong(instruction.substring(6, 9), 2);
+		this.rt = (int) Long.parseLong(instruction.substring(3, 6), 2);
+		this.rs = (int) Long.parseLong(instruction.substring(6, 9), 2);
 		String imm = instruction.substring(9);
 		this.imm = convertToDecimal(imm);
 		this.rd = -1;

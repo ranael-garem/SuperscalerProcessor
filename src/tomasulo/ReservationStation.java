@@ -19,6 +19,8 @@ public class ReservationStation {
 	int exec_cycles_left; //Number of execution cycles left
 	
 	boolean calculated_address; //For Load Reservation Stations
+	int cache_level; // For load instructions
+	boolean accessed_cache;
 	
 	int result;
 	

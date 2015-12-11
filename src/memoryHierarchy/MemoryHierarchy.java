@@ -4,8 +4,6 @@ package memoryHierarchy;
 public class MemoryHierarchy {
 	public Memory memory;
 	public Cache[] caches;
-	public boolean currently_fetching;
-	int fetch_cycles_left;
 	
 	public MemoryHierarchy(int mem_access_time, int cacheLevels, String[] cacheInfo) {
 		this.memory = new Memory(mem_access_time);
@@ -31,42 +29,115 @@ public class MemoryHierarchy {
 			}
 		}
 	}
+	
+	public int loadCacheLevel(String address) {
+		for(int i = 1; i <= this.caches.length; i++) {
+			if (i == this.caches.length) {
+				return i;
+			}
 
-	public boolean done_fetching(String address) {
-		if(!currently_fetching) {
-			for (int i = 0; i <= this.caches.length; i++) {
-				if(i != 1) {
-					if(i == this.caches.length) {
-						this.fetch_cycles_left += this.memory.access_time;
-						this.currently_fetching = true;
-						break;
-					}
-						
-					if (caches[i].hitOrMiss(address)) {
-						this.fetch_cycles_left += caches[i].cycles;
-//						System.out.println("cache " + this.fetch_cycles_left);
-
-						this.currently_fetching = true;
-						break;
+			if(caches[i].hitOrMiss(address)) {
+				System.out.println("HIT");
+				caches[i].hits++;
+				return i;
+			}
+			else {
+				caches[i].misses++;
+			}
+		}
+		return -1;
+	}
+	
+	public String loadValue(String address) {
+		this.caches[1].load_cycles_left--;
+		if(this.caches[1].load_cycles_left == 0) {
+			this.caches[1].being_accessed = false;
+			this.caches[1].load_cycles_left = this.caches[1].cycles;
+			return caches[1].read(address);
+		}
+		else {
+			this.caches[1].being_accessed = true;
+			return null;
+		}
+	}
+	
+	public int cacheCyclesLeft(int cacheLevel, String address) {
+		if(cacheLevel == this.caches.length) { //Memory
+			this.memory.load_cycles_left--;
+			this.memory.total_cycles++;
+			if(this.memory.load_cycles_left == 0) {
+				this.memory.being_accessed = false;
+				this.memory.load_cycles_left = this.memory.access_time;
+				Block to_be_cached = read_block_from_memory(address);
+				String indexBits = address.substring(this.caches[cacheLevel-1].getTag(), 16 - this.caches[cacheLevel-1].getOffset());
+				writeBlock(to_be_cached, indexBits, cacheLevel - 1); // write block to the level where it missed
+				return 0;
+			}else {
+				this.memory.being_accessed = true;
+				return this.memory.load_cycles_left;
+			}
+		}
+		this.caches[cacheLevel].load_cycles_left--;
+		if(this.caches[cacheLevel].load_cycles_left == 0) {
+			this.caches[cacheLevel].being_accessed = false;
+			this.caches[cacheLevel].load_cycles_left = this.caches[cacheLevel].cycles;
+			Block to_be_cached = read_from_lower_level(cacheLevel, address, false);	// Read block from lower level
+			
+			String indexBits = address.substring(this.caches[cacheLevel-1].getTag(), 16 - this.caches[cacheLevel-1].getOffset());
+			writeBlock(to_be_cached, indexBits, cacheLevel - 1); // write block to the level where it missed
+			return 0;
+			
+		}
+		else {
+			this.caches[cacheLevel].being_accessed = true;
+			return this.caches[cacheLevel].load_cycles_left;
+		}
+	}
+	
+	public String temp(String address) {
+		for(int i = 0; i <= this.caches.length; i++) {
+			if(i == 1)
+				i = 2;
+			if (i == this.caches.length) {
+				this.memory.total_cycles++;
+				this.memory.fetch_cycles_left--;
+				if(this.memory.fetch_cycles_left == 0) {
+					this.memory.fetch_cycles_left = this.memory.access_time;
+					resetCaches();
+					return read_instruction(address);
+				}
+				return null;
+			}
+			if(!caches[i].fetch_accessed) {
+				caches[i].fetch_cycles_left--;
+				if(caches[i].fetch_cycles_left == 0) {
+					caches[i].fetch_accessed = true;
+					caches[i].fetch_cycles_left = caches[i].cycles;
+					if(caches[i].hitOrMiss(address)) {
+						caches[i].hits++;
+						resetCaches();
+						return read_instruction(address);
 					}
 					else {
-						this.fetch_cycles_left += caches[i].cycles;
+						caches[i].misses++;
 					}
+				}
+				else {
+					return null;
 				}
 			}
 		}
-
-		if (fetch_cycles_left == 1) {
-			this.fetch_cycles_left = 0;
-			this.currently_fetching = false;
-			return true;
-		}
-		else {
-
-			fetch_cycles_left --;
-			return false;
+		return null;
+	}
+	
+	
+	private void resetCaches() {
+		for(int i = 0; i < this.caches.length; i++) {
+			this.caches[i].fetch_accessed = false;
+			this.caches[i].fetch_cycles_left = this.caches[i].cycles;
 		}
 	}
+
 	
 	public int load_cycles_left(String address) {
 		int cycles = 0;
@@ -87,7 +158,6 @@ public class MemoryHierarchy {
 			}
 		return cycles;
 	}
-	
 	
 	public int store_cycles_left(String address) {
 		int cycles = load_cycles_left(address); // Write misses cycles
@@ -112,6 +182,7 @@ public class MemoryHierarchy {
 		// Takes a binary address and returns corresponding value of address
 		Block to_be_cached;
 		int k;
+		
 		for (int i = 0; i <= this.caches.length; i++) {
 			if((i - 1) == 1 )
 				k = 0;
@@ -140,25 +211,31 @@ public class MemoryHierarchy {
 							if(i == 0)
 								i = -1;
 						}
-					} 
+					}
 				}
 			}
 		}
 		return null;
 	}
 
-
 	public  String read_data(String address) {
 		// Takes a binary address and returns corresponding value of address
 		Block to_be_cached;
+		boolean flag = false;
+
 		for (int i = 1; i <= this.caches.length; i++) {
 			if (i == this.caches.length) { 
 				to_be_cached = read_block_from_memory(address);
 				String indexBits = address.substring(this.caches[i-1].getTag(), 16 - this.caches[i-1].getOffset());
 				writeBlock(to_be_cached, indexBits, i - 1); // write block to the level where it missed
 				i = i-2;
+				flag = true;
 			} else {
 			if (caches[i].hitOrMiss(address)) {
+				if(!flag) {
+					caches[i].hits++;
+					flag = true;
+				}
 				if (i == 1) {
 					// Hit in the first level
 					return caches[i].read(address);
@@ -169,7 +246,10 @@ public class MemoryHierarchy {
 						writeBlock(to_be_cached, indexBits, i - 1); // write block to the level where it missed
 						i = i-2;
 					}
-				} 
+				}  else {
+					if(!flag)
+						caches[i].misses++;
+				}
 			}
 		}
 		return null;
@@ -279,6 +359,7 @@ public class MemoryHierarchy {
 	
 	public void write(String address, String data) {
 		if (caches[1].hitOrMiss(address)) {
+			caches[1].hits++;
 			write_to_cache(1, address, data);
 		}
 		else {
@@ -332,5 +413,16 @@ public class MemoryHierarchy {
 			System.out.println("---------------------");
 		}
 	}
+	
+	public void printCacheAccesses() {
+		for(int i = 0; i < this.caches.length; i++) {
+			System.out.println("Cache " + i +": Accesses: " + (caches[i].hits + caches[i].misses) + ", Misses: " + caches[i].misses);
+		}
+	}
 
+
+	public int fetchCacheLevel(String address) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
 }

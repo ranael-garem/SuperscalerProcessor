@@ -57,12 +57,20 @@ public class InstructionBuffer {
 		}
 		return true;
 	}
-	public static void main(String[] args) {
-	}
+
 
 	public boolean isFull() {
 		
 		return this.instruction_buffer[tail] != null;
+	}
+	
+	public void flush() {
+		for(int i = 0; i < this.instruction_buffer.length; i++) {
+			this.instruction_buffer[i] = null;
+		}
+		this.head = 0;
+		this.tail = 0;
+
 	}
 
 }
