@@ -3,7 +3,7 @@ package memoryHierarchy;
 public class Memory {
 
 	String [] mem_array; // Represents the memory itself
-	int access_time; // Number of cycles to access memory
+	public int access_time; // Number of cycles to access memory
 	
 	int fetch_cycles_left;
 	
@@ -23,6 +23,7 @@ public class Memory {
 	public void WriteToMemory(int address, String data) {
 		this.mem_array[address] = data;
 	}
+	
 	public int getAccess_time() {
 		return access_time;
 	}

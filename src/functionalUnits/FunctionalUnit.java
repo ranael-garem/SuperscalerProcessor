@@ -10,6 +10,7 @@ public abstract class  FunctionalUnit {
 	 * @param args
 	 */
 	public abstract int execute(String type, int op1, int op2);
+	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 

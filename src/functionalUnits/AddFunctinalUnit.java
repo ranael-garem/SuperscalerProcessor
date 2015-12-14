@@ -1,5 +1,7 @@
 package functionalUnits;
 
+import Binary.binary;
+
 public class AddFunctinalUnit extends FunctionalUnit {
 	
 	int cycles;
@@ -50,7 +52,8 @@ public class AddFunctinalUnit extends FunctionalUnit {
 				result += '1';
 				
 		}
-		return (int) Long.parseLong(result);
+
+		return binary.convertToDecimal(result);
 
 		}
 	

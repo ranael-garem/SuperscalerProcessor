@@ -1,0 +1,32 @@
+
+MemoryHierarchy
+numberOfCacheLevels:
+Cache1
+S:
+L:
+M:
+writePolicyHit:
+writePolicyMiss:
+cacheCycles:
+mainMemoryCycles:
+HardwareOrganization
+simultaneousIssuesOfInstructions:
+sizeInstructionBuffer:
+sizeOfROB:
+ADDRS:
+ADDCycles:
+MULRS:
+MULCycles:
+LWRS:
+LWCycles:
+JALRRS:
+JALRCycles:
+AssemblyProgram
+.org
+// Assembly Program goes here
+endofAssembly
+ProgramData
+//Data required goes here
+//Format: address;value
+endofData
+

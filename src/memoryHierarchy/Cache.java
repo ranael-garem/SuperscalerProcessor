@@ -6,7 +6,7 @@ public class Cache {
 	int Size; // Size of Cache (Power of 2)
 	int blockSize; // (Power of 2)
 	int m; // associativity
-	int cycles; // access time to data
+	public int cycles; // access time to data
 
 
 	String writePolicyHit; // writeBack or writeThrough
@@ -14,7 +14,6 @@ public class Cache {
 	
 	public int hits;
 	public int misses;
-	public int accesses;
 	
 	boolean fetch_accessed;
 	int fetch_cycles_left;
@@ -73,6 +72,7 @@ public class Cache {
 			target = this.sets[0];
 		else {
 			String indexBits = address.substring(getTag(), 16 - getOffset());
+
 			int index = (int) Long.parseLong(indexBits, 2);
 			target = this.sets[index];
 		}
@@ -151,6 +151,11 @@ public class Cache {
 		int random_index_block = (int) (Math.random() * this.m);
 		set.blocks[random_index_block] = block;
 		return;
+	}
+	
+	public double missRate() {
+		return (double) this.misses /((double)this.hits + (double) this.misses);
+
 	}
 	
 	public void printCache() {

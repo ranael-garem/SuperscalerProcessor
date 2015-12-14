@@ -37,7 +37,6 @@ public class MemoryHierarchy {
 			}
 
 			if(caches[i].hitOrMiss(address)) {
-				System.out.println("HIT");
 				caches[i].hits++;
 				return i;
 			}
@@ -81,10 +80,12 @@ public class MemoryHierarchy {
 		if(this.caches[cacheLevel].load_cycles_left == 0) {
 			this.caches[cacheLevel].being_accessed = false;
 			this.caches[cacheLevel].load_cycles_left = this.caches[cacheLevel].cycles;
-			Block to_be_cached = read_from_lower_level(cacheLevel, address, false);	// Read block from lower level
 			
-			String indexBits = address.substring(this.caches[cacheLevel-1].getTag(), 16 - this.caches[cacheLevel-1].getOffset());
-			writeBlock(to_be_cached, indexBits, cacheLevel - 1); // write block to the level where it missed
+			if(cacheLevel != 1) {
+				Block to_be_cached = read_from_lower_level(cacheLevel, address, false);	// Read block from lower level
+				String indexBits = address.substring(this.caches[cacheLevel-1].getTag(), 16 - this.caches[cacheLevel-1].getOffset());
+				writeBlock(to_be_cached, indexBits, cacheLevel - 1); // write block to the level where it missed
+			}
 			return 0;
 			
 		}
@@ -94,7 +95,7 @@ public class MemoryHierarchy {
 		}
 	}
 	
-	public String temp(String address) {
+	public String fetchInstruction(String address) {
 		for(int i = 0; i <= this.caches.length; i++) {
 			if(i == 1)
 				i = 2;
@@ -138,45 +139,7 @@ public class MemoryHierarchy {
 		}
 	}
 
-	
-	public int load_cycles_left(String address) {
-		int cycles = 0;
-		for (int i = 1; i <= this.caches.length; i++) {
-				if(i == this.caches.length) {
-					cycles += this.memory.access_time;
-					break;
-				}
-					
-				if (caches[i].hitOrMiss(address)) {
-					cycles += caches[i].cycles;
-//					System.out.println("cache " + this.fetch_cycles_left);
-					break;
-				}
-				else {
-					cycles += caches[i].cycles;
-				}
-			}
-		return cycles;
-	}
-	
-	public int store_cycles_left(String address) {
-		int cycles = load_cycles_left(address); // Write misses cycles
-		for (int i = 1; i <= this.caches.length; i++) {
-			if(i == this.caches.length) {
-				cycles += this.memory.access_time;
-				break;
-			}
-				
-			if (caches[i].writePolicyHit.toLowerCase().equals("writeBack")) {
-				cycles += caches[i].cycles;
-				break;
-			}
-			else {
-				cycles += caches[i].cycles;
-			}
-		}
-	return cycles;
-	}
+
 	
 	public  String read_instruction(String address) {
 		// Takes a binary address and returns corresponding value of address

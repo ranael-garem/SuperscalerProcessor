@@ -13,9 +13,9 @@ public class RegisterStatusTable {
 	public void printRegisterStatusTable() {
 		System.out.println("Register Status");
 		for (int i = 0; i < this.ROBTag.length; i++) {
-			System.out.println("R"+i+": " + ROBTag[i] );
-	}
-
+			System.out.print("R"+i+": " + ROBTag[i] +", ");
+		}
+		System.out.println();
 
 	}
 

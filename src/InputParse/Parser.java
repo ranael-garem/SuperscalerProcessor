@@ -9,9 +9,16 @@ public class Parser {
 	private int pointer = 0;
 	MemoryHierarchy m;
 	Tomasulo t;
+	String fileName;
+	
+	public Parser(String fileName) {
+		this.fileName = fileName;
+		parseAll(fileName);
+		t.Simulation();
+	}
 
-	public void parseAll() {
-		ArrayList<String> input = BufferedReaderExample.returnContents();
+	public void parseAll(String fileName) {
+		ArrayList<String> input = BufferedReaderExample.returnContents(fileName);
 		parseMemoryHierarchy(input);
 		parseHardwareOrganization(input);
 		parseAssemblyProgram(input);
@@ -120,7 +127,7 @@ public class Parser {
 		int PCend = PCbegin+ 2*(input.indexOf("endofAssembly") - pointer - 2)-2;
 //		System.out.println("PC "+(PCend + 2));
 		t = new Tomasulo(ROBentries, instruction_buffer_entries, FUinfo, PCbegin, PCend, simulInstrCount);
-		t.mem_heirarchy = this.m;
+		t.mem_hierarchy = this.m;
 		//parseAssemblyProgram(input);
 		
 	}
@@ -178,27 +185,11 @@ public class Parser {
 	}
 
 	public static void main(String[] args) {
-		Parser s = new Parser();
-		s.parseAll();
-		s.t.Simulation();
-		
-//		System.out.println("Total Execution Time "+ s.t.getCycles());
-//		System.out.println("IPC "+ s.t.getNumberOfInstructions()/s.t.getCycles());
-//		for(int i = 0; i < s.m.caches.length; i++) {
-//			System.out.println("For Cache Level "+(i+1)+""+ 
-//		s.m.caches[i].getHits()/(s.m.caches[i].getHits()+s.m.caches[i].getMisses()));
-//		}
-//		int amat=0;
-//		int temp=0;
-//		for(int j = s.m.caches.length; j>0; j--) {
-//			temp = s.m.caches[j].getCycles() + 
-//					(s.m.caches[j].getMisses()/(s.m.caches[j].getHits()+s.m.caches[j].getMisses()))* 
-//					s.m.memory.getAccess_time();
-//			amat=s.m.caches[j-1].getCycles() + 
-//					(s.m.caches[j-1].getMisses()/(s.m.caches[j-1].getHits()+s.m.caches[j-1].getMisses()))* 
-//					temp;
-//		}
-//		System.out.println("The AMAT of simulation is "+amat);
-		
+		Parser s = new Parser("example.txt");
+//		Parser s = new Parser("program1.txt");
+//		Parser s = new Parser("program3.txt");
+//		Parser s = new Parser("program4.txt");
+//		Parser s1 = new Parser("program2.txt");
+
 	}
 }

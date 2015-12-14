@@ -26,17 +26,17 @@ public class MemoryHierarchyTestCase {
 		String [] cacheInfo = {"64,8,1,writeBack,writeAllocate,3"};
 		MemoryHierarchy memoryHeirarchy = new MemoryHierarchy(10, 1, cacheInfo);
 		memoryHeirarchy.printHierarchyInfo();
-		memoryHeirarchy.memory.WriteToMemory(4, 4);
-		memoryHeirarchy.memory.WriteToMemory(536, 536);
-		memoryHeirarchy.memory.WriteToMemory(848, 848);
-		memoryHeirarchy.memory.WriteToMemory(540, 540);
-		memoryHeirarchy.memory.WriteToMemory(852, 852);
-		memoryHeirarchy.memory.WriteToMemory(648, 648);
-		memoryHeirarchy.memory.WriteToMemory(644, 644);
-		memoryHeirarchy.memory.WriteToMemory(8, 8);
-		memoryHeirarchy.memory.WriteToMemory(175, 175);
-		memoryHeirarchy.memory.WriteToMemory(164, 164);
-		memoryHeirarchy.memory.WriteToMemory(884, 884);
+//		memoryHeirarchy.memory.WriteToMemory(4, 4);
+//		memoryHeirarchy.memory.WriteToMemory(536, 536);
+//		memoryHeirarchy.memory.WriteToMemory(848, 848);
+//		memoryHeirarchy.memory.WriteToMemory(540, 540);
+//		memoryHeirarchy.memory.WriteToMemory(852, 852);
+//		memoryHeirarchy.memory.WriteToMemory(648, 648);
+//		memoryHeirarchy.memory.WriteToMemory(644, 644);
+//		memoryHeirarchy.memory.WriteToMemory(8, 8);
+//		memoryHeirarchy.memory.WriteToMemory(175, 175);
+//		memoryHeirarchy.memory.WriteToMemory(164, 164);
+//		memoryHeirarchy.memory.WriteToMemory(884, 884);
 //		memoryHeirarchy.memory.print_part_memory(0, 890);
 		
 		int [] addresses = {4,536,848,4, 540, 852, 648, 644, 8, 175, 164, 884};

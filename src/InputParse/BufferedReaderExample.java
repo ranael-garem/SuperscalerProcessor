@@ -6,14 +6,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 public class BufferedReaderExample {
-	public static ArrayList<String> returnContents() {
+	public static ArrayList<String> returnContents(String fileName) {
 		BufferedReader br = null;
 		ArrayList<String> content = new ArrayList<String>();
 		try {
 
 			String sCurrentLine;
 
-			br = new BufferedReader(new FileReader("program3.txt"));
+			br = new BufferedReader(new FileReader(fileName));
 
 			while ((sCurrentLine = br.readLine()) != null) {
 				content.add(sCurrentLine);

@@ -66,7 +66,8 @@ public class RegisterFile {
 	public void printRegisterFile() {
 		System.out.println("Register File");
 		for (int i = 0; i < this.registers.length; i++) {
-			System.out.println("R"+i+": " + convertToDecimal(registers[i]) );
-		}		
+			System.out.print("R"+i+": " + convertToDecimal(registers[i]) + ", ");
+		}
+		System.out.println();
 	}
 }

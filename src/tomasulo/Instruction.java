@@ -8,10 +8,8 @@ public class Instruction {
 	int imm;
 	
 	String type;
-	String status; // Fetched, Issued, Executed, Written, Committed
 	
 	int PC_value;
-	String instruction;
 
 	public Instruction(String instruction) {
 		String opcode = instruction.substring(0,3);
@@ -119,13 +117,6 @@ public class Instruction {
 
 	}
 	
-	public Instruction(int rs, int rt, int rd, int imm, String type) {
-		this.rs = rs;
-		this.rd = rd;
-		this.rt = rt;
-		this.imm = imm;
-		this.type = type;
-	}
 	
 	public static int convertToDecimal(String number) {		
 		String result;
